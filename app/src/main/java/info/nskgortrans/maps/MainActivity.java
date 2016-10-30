@@ -1,8 +1,13 @@
 package info.nskgortrans.maps;
 
+import android.*;
+import android.Manifest;
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.preference.PreferenceManager;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 
@@ -17,6 +22,11 @@ import java.util.Map;
 
 public class MainActivity extends AppCompatActivity implements OnMapReadyCallback, GoogleMap.OnCameraIdleListener
 {
+  private int notGrantedPermissions = 4;
+  private int LOCATION_PERMISSION_GRANTED = 10;
+  private int INTERNET_PERMISSION_GRANTED = 11;
+  private int STORAGE_PERMISSION_GRANTED  = 12;
+  private int NETWORK_PERMISSION_GRANTED  = 13;
 
   private SharedPreferences pref;
   private GoogleMap map;
@@ -25,6 +35,53 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
   protected void onCreate(Bundle savedInstanceState)
   {
     super.onCreate(savedInstanceState);
+
+    // make sure all permissions granted
+    if ( ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) !=
+          PackageManager.PERMISSION_GRANTED
+    )
+    {
+      ActivityCompat.requestPermissions(this, new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION},
+              LOCATION_PERMISSION_GRANTED);
+    }
+    else
+    {
+      notGrantedPermissions--;
+    }
+    if ( ContextCompat.checkSelfPermission(this, Manifest.permission.INTERNET) !=
+            PackageManager.PERMISSION_GRANTED
+            )
+    {
+      ActivityCompat.requestPermissions(this, new String[]{android.Manifest.permission.INTERNET},
+              INTERNET_PERMISSION_GRANTED);
+    }
+    else
+    {
+      notGrantedPermissions--;
+    }
+    if ( ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) !=
+            PackageManager.PERMISSION_GRANTED
+            )
+    {
+      ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
+              STORAGE_PERMISSION_GRANTED);
+    }
+    else
+    {
+      notGrantedPermissions--;
+    }
+    if ( ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) !=
+            PackageManager.PERMISSION_GRANTED
+            )
+    {
+      ActivityCompat.requestPermissions(this, new String[]{android.Manifest.permission.ACCESS_NETWORK_STATE},
+              NETWORK_PERMISSION_GRANTED);
+    }
+    else
+    {
+      notGrantedPermissions--;
+    }
+
     setContentView(R.layout.activity_main);
 
     MapFragment mapFragment = (MapFragment) getFragmentManager().findFragmentById(R.id.map_container);
