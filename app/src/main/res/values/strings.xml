@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">Транспорт Новосибирска</string>
+
+    <string name="pref_lat">map_lat</string>
+    <string name="pref_lng">map_lng</string>
+    <string name="pref_zoom">map_zoom</string>
+</resources>
