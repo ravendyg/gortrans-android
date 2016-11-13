@@ -1,15 +1,11 @@
 package info.nskgortrans.maps;
 
-import android.*;
-import android.Manifest;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
-import android.content.pm.PackageManager;
 import android.preference.PreferenceManager;
-import android.provider.Settings;
-import android.support.v4.app.ActivityCompat;
-import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -28,20 +24,19 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.IOException;
 import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Map;
 
 import info.nskgortrans.maps.DataClasses.Route;
 import info.nskgortrans.maps.Services.BusPositionService;
 
 public class MainActivity extends AppCompatActivity implements OnMapReadyCallback
 {
+  private String LOG_TAG = "main activity";
+
   private int notGrantedPermissions = 2;
   private final int LOCATION_PERMISSION_GRANTED = 10;
   private final int STORAGE_PERMISSION_GRANTED  = 11;
@@ -50,6 +45,10 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
   private GoogleMap map;
 
   private ArrayList<Route> listMarsh;
+
+  private BroadcastReceiver socketReceiver;
+
+//  private SocketIO socket;
 
   @Override
   protected void onCreate(Bundle savedInstanceState)
@@ -93,8 +92,35 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     MapFragment mapFragment = (MapFragment) getFragmentManager().findFragmentById(R.id.map_container);
     mapFragment.getMapAsync(this);
 
-    // start bus position service
-    startService( new Intent(this, BusPositionService.class) );
+//    // start bus position service
+//    startService( new Intent(this, BusPositionService.class) );
+
+    startService(new Intent(this, BusPositionService.class));
+
+    // hardcoded behaviour: register receiver that will listen for bus 36
+    if (socketReceiver == null)
+    {
+      socketReceiver = new BroadcastReceiver()
+      {
+        @Override
+        public void onReceive(Context context, Intent intent)
+        {
+//        // Get extra data included in the Intent
+//        String message = intent.getStringExtra("message");
+//        Log.d("receiver", "Got message: " + message);
+          String eventType = intent.getStringExtra("event");
+          if ( eventType.equals("connection") )
+          {
+            requestBusOnMap("1-036-W-36");
+          }
+          else if (eventType.equals("bus listener created") )
+          {
+            addBusToMap("1-036-W-36");
+          }
+        }
+      };
+    }
+    registerReceiver(socketReceiver, new IntentFilter("gortrans-socket-activity"));
   }
 
   @Override
@@ -262,6 +288,47 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     LatLng start = new LatLng(lat, lng);
     CameraPosition target = CameraPosition.builder().target(start).zoom(zoom).build();
     _map.moveCamera(CameraUpdateFactory.newCameraPosition(target) );
+  }
+
+
+  private void connectToSocket()
+  {
+    Log.e(LOG_TAG, "connect");
+    new Thread(new Runnable()
+    {
+      @Override
+      public void run()
+      {
+        Log.e(LOG_TAG, "get instance");
+//        socket = SocketIO.getInstance();
+      }
+    }).start();
+  }
+
+  private void requestBusOnMap(String busCode)
+  {
+    Intent intent =
+      new Intent("gortrans-socket-service")
+      .putExtra("busCode", busCode)
+      .putExtra("event", "request add bus")
+      ;
+
+    sendBroadcast(intent);
+  }
+
+  private void addBusToMap(String code)
+  {
+    Log.e(LOG_TAG, code);
+  }
+
+  private void updateBusOnMap(String code)
+  {
+
+  }
+
+  private void removeBusFromMap(String code)
+  {
+
   }
 
 //  // permissions handling
