@@ -3,6 +3,7 @@ package info.nskgortrans.maps;
 import android.*;
 import android.Manifest;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.preference.PreferenceManager;
@@ -13,29 +14,31 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 
+import java.io.InputStream;
+import java.io.InputStreamReader;
+
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapFragment;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
-import com.koushikdutta.async.ByteBufferList;
-import com.koushikdutta.async.DataEmitter;
-import com.koushikdutta.async.callback.DataCallback;
-import com.koushikdutta.async.http.AsyncHttpClient;
-import com.koushikdutta.async.http.AsyncHttpRequest;
-import com.koushikdutta.async.http.AsyncHttpResponse;
-import com.koushikdutta.async.http.callback.HttpConnectCallback;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.IOException;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Map;
 
 import info.nskgortrans.maps.DataClasses.Route;
+import info.nskgortrans.maps.Services.BusPositionService;
 
 public class MainActivity extends AppCompatActivity implements OnMapReadyCallback
 {
@@ -90,7 +93,8 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     MapFragment mapFragment = (MapFragment) getFragmentManager().findFragmentById(R.id.map_container);
     mapFragment.getMapAsync(this);
 
-
+    // start bus position service
+    startService( new Intent(this, BusPositionService.class) );
   }
 
   @Override
@@ -98,54 +102,91 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
   {
     super.onPause();
 
-    CameraPosition target = map.getCameraPosition();
-    float lat = (float) target.target.latitude;
-    float lng = (float) target.target.longitude;
-    int zoom = Math.round(target.zoom);
+    try
+    {
+      CameraPosition target = map.getCameraPosition();
+      float lat = (float) target.target.latitude;
+      float lng = (float) target.target.longitude;
+      int zoom = Math.round(target.zoom);
 
-    SharedPreferences.Editor editor = pref.edit();
-    editor.putFloat( getString(R.string.pref_lat), lat );
-    editor.putFloat( getString(R.string.pref_lng), lng );
-    editor.putInt( getString(R.string.pref_zoom), zoom );
-    editor.commit();
+      SharedPreferences.Editor editor = pref.edit();
+      editor.putFloat(getString(R.string.pref_lat), lat);
+      editor.putFloat(getString(R.string.pref_lng), lng);
+      editor.putInt(getString(R.string.pref_zoom), zoom);
+      editor.commit();
+    }
+    catch (Exception err)
+    {
+      Log.e("save map position", "", err);
+    }
+  }
+
+  @Override
+  protected void onDestroy()
+  {
+    super.onDestroy();
+    // stop bus position service
+    stopService( new Intent(this, BusPositionService.class) );
   }
 
   private void performSync(final long routesTimestamp, final long trassesTimestamp, final long stopsTimestamp)
   {
-    String syncUrl = "https://maps.nskgortrans.info/sync?" +
-            "routestimestamp=" + routesTimestamp +
-            "&trassestimestamp=" + trassesTimestamp +
-            "&stopstimestamp=" + stopsTimestamp;
-
-    System.out.println(syncUrl);
-
-    AsyncHttpClient.getDefaultInstance().execute(syncUrl, new HttpConnectCallback()
+    final String TAG = "sync request";
+    new Thread(new Runnable()
     {
-      @Override
-      public void onConnectCompleted(Exception ex, AsyncHttpResponse response)
-      {
-        if (ex != null)
-        {
-          ex.printStackTrace();
-          return;
-        }
+      HttpURLConnection connection = null;
+      BufferedReader reader = null;
 
-        AsyncHttpRequest request = response.getRequest();
-        request.setTimeout(5000);
-        AsyncHttpClient.getDefaultInstance().executeJSONObject(request, new AsyncHttpClient.JSONObjectCallback()
+      @Override
+      public void run()
+      {
+        JSONObject result;
+
+        try
         {
-          @Override
-          public void onCompleted(Exception e, AsyncHttpResponse source, JSONObject result)
+         URL syncUrl = new URL(
+           getString(R.string.base_url) +
+                   "/sync?" +
+                   "routestimestamp=" + routesTimestamp +
+                   "&trassestimestamp=" + trassesTimestamp +
+                   "&stopstimestamp=" + stopsTimestamp
+         );
+
+         connection = (HttpURLConnection) syncUrl.openConnection();
+         connection.setRequestMethod("GET");
+         connection.setConnectTimeout(5000);
+         connection.setReadTimeout(5000);
+         connection.connect();
+
+         InputStream input = connection.getInputStream();
+         StringBuffer buffer = new StringBuffer();
+
+          if (input == null)
           {
-            if (e != null)
-            {
-              e.printStackTrace();
-              return;
-            }
+            return;
+          }
+
+          reader = new BufferedReader(new InputStreamReader(input));
+
+          String line;
+          while ((line = reader.readLine()) != null)
+          {
+            buffer.append(line + "\n");
+          }
+
+          if (buffer.length() == 0)
+          {
+            return;
+          }
+
+          try
+          {
+            result = new JSONObject( buffer.toString() );
 
             System.out.println("I got a JSONObject: " + result);
-Log.e("test", "test");
+
             SharedPreferences.Editor editor = pref.edit();
+
             long newRoutesTimestamp = JSONParser.getTimestamp(result, "routes");
             if (newRoutesTimestamp > routesTimestamp)
             {
@@ -163,20 +204,43 @@ Log.e("test", "test");
             }
             editor.commit();
 
-            try
-            {
-              listMarsh = JSONParser.getRoutes(result);
-            }
-            catch (JSONException err)
-            {
-              listMarsh = new ArrayList<Route>(Arrays.asList(new Route[0]));
-            }
+            listMarsh = JSONParser.getRoutes(result);
 
             System.out.println(newRoutesTimestamp + " " + newTrassesTimestamp + " " + newStopsTimestamp);
           }
-        });
+          catch (JSONException err)
+          {
+            listMarsh = new ArrayList<Route>(Arrays.asList(new Route[0]));
+          }
+        }
+        catch (java.net.SocketTimeoutException e)
+        {
+         Log.e(TAG, "error", e);
+        }
+        catch (IOException e)
+        {
+         Log.e(TAG, "error", e);
+        }
+        finally
+        {
+         if (connection != null)
+         {
+           connection.disconnect();
+         }
+         if (reader != null)
+         {
+           try
+           {
+             reader.close();
+           }
+           catch (final IOException e)
+           {
+             Log.e(TAG, "closing stream", e);
+           }
+         }
+        }
       }
-    });
+    }).start();
 
     String routesFileString = "";
     if ( FileAPI.isFileExists(getBaseContext(), getString(R.string.routes_file)) )
