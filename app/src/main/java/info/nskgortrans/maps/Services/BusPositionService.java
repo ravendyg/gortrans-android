@@ -31,8 +31,6 @@ public class BusPositionService extends Service
 
   private BroadcastReceiver socketReceiver;
 
-  public static Handler handler;
-
 
   public void onCreate()
   {
@@ -64,9 +62,6 @@ public class BusPositionService extends Service
   public int onStartCommand(Intent intent, int flags, int startId)
   {
     Log.e(LOG_TAG, "onStart");
-
-    SocketThread socketThread = new SocketThread();
-    socketThread.start();
 
     return super.onStartCommand(intent, flags, startId);
   }
@@ -138,39 +133,5 @@ public class BusPositionService extends Service
     socketIO.emit("add bus listener", code);
   }
 
-  class SocketThread extends Thread
-  {
-    public void run()
-    {
-      Looper.prepare();
-
-      handler = new Handler()
-      {
-        public void handleMessage(Intent intent)
-        {
-          Log.e("handler", "");
-        }
-
-        @Override
-        public void publish(LogRecord logRecord)
-        {
-
-        }
-
-        @Override
-        public void flush()
-        {
-
-        }
-
-        @Override
-        public void close() throws SecurityException
-        {
-
-        }
-      };
-      Looper.loop();
-    }
-  }
 }
 
