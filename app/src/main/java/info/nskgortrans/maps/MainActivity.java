@@ -1,11 +1,16 @@
 package info.nskgortrans.maps;
 
+import android.Manifest;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
+import android.content.pm.ProviderInfo;
 import android.preference.PreferenceManager;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -13,15 +18,13 @@ import android.util.Log;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 
-import com.google.android.gms.maps.CameraUpdateFactory;
-import com.google.android.gms.maps.GoogleMap;
-import com.google.android.gms.maps.MapFragment;
-import com.google.android.gms.maps.OnMapReadyCallback;
-import com.google.android.gms.maps.model.CameraPosition;
-import com.google.android.gms.maps.model.LatLng;
-
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.osmdroid.api.IMapController;
+import org.osmdroid.tileprovider.tilesource.TileSourceFactory;
+import org.osmdroid.util.GeoPoint;
+import org.osmdroid.views.MapView;
+import org.osmdroid.views.Projection;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -33,16 +36,19 @@ import java.util.Arrays;
 import info.nskgortrans.maps.DataClasses.Route;
 import info.nskgortrans.maps.Services.BusPositionService;
 
-public class MainActivity extends AppCompatActivity implements OnMapReadyCallback
+import static info.nskgortrans.maps.R.id.map;
+
+public class MainActivity extends AppCompatActivity
 {
   private String LOG_TAG = "main activity";
 
   private int notGrantedPermissions = 2;
-  private final int LOCATION_PERMISSION_GRANTED = 10;
-  private final int STORAGE_PERMISSION_GRANTED  = 11;
+  private final int COARSE_LOCATION_PERMISSION_GRANTED = 10;
+  private final int FINE_LOCATION_PERMISSION_GRANTED = 11;
+  private final int WRITE_STORAGE_PERMISSION_GRANTED  = 12;
 
   private SharedPreferences pref;
-  private GoogleMap map;
+  private MapView map;
 
   private ArrayList<Route> listMarsh;
 
@@ -56,44 +62,68 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     super.onCreate(savedInstanceState);
 
     // make sure all permissions granted
-//    if ( ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) !=
-//          PackageManager.PERMISSION_GRANTED
-//    )
-//    {
-//      ActivityCompat.requestPermissions(this, new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION},
-//              LOCATION_PERMISSION_GRANTED);
-//    }
-//    else
-//    {
-//      notGrantedPermissions--;
-//    }
-//    if ( ContextCompat.checkSelfPermission(this, android.Manifest.permission.WRITE_EXTERNAL_STORAGE) !=
-//            PackageManager.PERMISSION_GRANTED
-//            )
-//    {
-//      ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
-//              STORAGE_PERMISSION_GRANTED);
-//    }
-//    else
-//    {
-//      notGrantedPermissions--;
-//    }
+    if ( ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) !=
+            PackageManager.PERMISSION_GRANTED
+            )
+    {
+      ActivityCompat.requestPermissions(this, new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION},
+              FINE_LOCATION_PERMISSION_GRANTED);
+    }
+    else
+    {
+      notGrantedPermissions--;
+    }
+    if ( ContextCompat.checkSelfPermission(this, android.Manifest.permission.WRITE_EXTERNAL_STORAGE) !=
+            PackageManager.PERMISSION_GRANTED
+            )
+    {
+      ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
+              WRITE_STORAGE_PERMISSION_GRANTED);
+    }
+    else
+    {
+      notGrantedPermissions--;
+    }
 
+    if (notGrantedPermissions == 0)
+    {
+      init();
+    }
+
+  }
+
+  private void init()
+  {
     pref = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
 
     long routesTimestamp = pref.getLong(getString(R.string.routes_timestamp), 0);
     long trassesTimestamp = pref.getLong(getString(R.string.routes_timestamp), 0);
     long stopsTimestamp = pref.getLong(getString(R.string.routes_timestamp), 0);
+
 //    performSync(routesTimestamp, trassesTimestamp, stopsTimestamp);
     performSync(0, 0, 0);
 
     setContentView(R.layout.activity_main);
 
-    MapFragment mapFragment = (MapFragment) getFragmentManager().findFragmentById(R.id.map_container);
-    mapFragment.getMapAsync(this);
+    // set user agent for the map
+    org.osmdroid.tileprovider.constants.OpenStreetMapTileProviderConstants.setUserAgentValue(BuildConfig.APPLICATION_ID);
 
-//    // start bus position service
-//    startService( new Intent(this, BusPositionService.class) );
+    /** init map */
+    map = (MapView) findViewById(R.id.map);
+    map.setTileSource(TileSourceFactory.MAPNIK);
+
+    map.setBuiltInZoomControls(true);
+    map.setMultiTouchControls(true);
+
+    float lat = pref.getFloat( getString(R.string.pref_lat), (float)54.908593335436926 );
+    float lng = pref.getFloat( getString(R.string.pref_lng), (float)83.0291748046875 );
+    int zoom =  pref.getInt( getString(R.string.pref_zoom), 10 );
+
+    IMapController mapController = map.getController();
+    mapController.setZoom(zoom);
+    GeoPoint startPoint = new GeoPoint(lat, lng);
+    mapController.setCenter(startPoint);
+    /** /init map */
 
     startService(new Intent(this, BusPositionService.class));
 
@@ -121,6 +151,8 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
       };
     }
     registerReceiver(socketReceiver, new IntentFilter("gortrans-socket-activity"));
+
+    return;
   }
 
   @Override
@@ -130,10 +162,12 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     try
     {
-      CameraPosition target = map.getCameraPosition();
-      float lat = (float) target.target.latitude;
-      float lng = (float) target.target.longitude;
-      int zoom = Math.round(target.zoom);
+      Projection proj = map.getProjection();
+      GeoPoint center = proj.getBoundingBox().getCenter();
+
+      float lat = (float) center.getLatitude();
+      float lng = (float) center.getLongitude();
+      int zoom = proj.getZoomLevel();
 
       SharedPreferences.Editor editor = pref.edit();
       editor.putFloat(getString(R.string.pref_lat), lat);
@@ -276,21 +310,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
   }
 
 
-  @Override
-  public void onMapReady(GoogleMap _map)
-  {
-    map = _map;
-
-    float lat = pref.getFloat( getString(R.string.pref_lat), (float)54.908593335436926 );
-    float lng = pref.getFloat( getString(R.string.pref_lng), (float)83.0291748046875 );
-    int zoom =  pref.getInt( getString(R.string.pref_zoom), 10 );
-
-    LatLng start = new LatLng(lat, lng);
-    CameraPosition target = CameraPosition.builder().target(start).zoom(zoom).build();
-    _map.moveCamera(CameraUpdateFactory.newCameraPosition(target) );
-  }
-
-
   private void connectToSocket()
   {
     Log.e(LOG_TAG, "connect");
@@ -331,28 +350,33 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
   }
 
-//  // permissions handling
-//  @Override
-//  public void onRequestPermissionsResult(int requestCode,
-//                                         String permissions[], int[] grantResults) {
-//    switch (requestCode) {
-//      case INTERNET_PERMISSION_GRANTED:
-//      {
-//        // If request is cancelled, the result arrays are empty.
-//        if (grantResults.length > 0
-//                && grantResults[0] == PackageManager.PERMISSION_GRANTED)
-//        {
-//          performSync(0, 0, 0);
-//        }
-//        else
-//        {
-//          // do nothing and let it crash
-//        }
-//        return;
-//      }
-//
-//      // other 'case' lines to check for other
-//      // permissions this app might request
-//    }
-//  }
+  // permissions handling
+  @Override
+  public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults)
+  {
+    switch (requestCode)
+    {
+      case COARSE_LOCATION_PERMISSION_GRANTED:
+      case FINE_LOCATION_PERMISSION_GRANTED:
+      case WRITE_STORAGE_PERMISSION_GRANTED:
+      {
+        // If request is cancelled, the result arrays are empty.
+        if (grantResults.length > 0
+                && grantResults[0] == PackageManager.PERMISSION_GRANTED)
+        {
+          notGrantedPermissions--;
+        }
+      }
+
+      // other 'case' lines to check for other
+      // permissions this app might request
+    }
+
+    if (notGrantedPermissions == 0)
+    {
+      init();
+    }
+
+    return;
+  }
 }

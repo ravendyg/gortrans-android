@@ -7,11 +7,17 @@
     android:layout_height="match_parent"
     tools:context="info.nskgortrans.maps.MainActivity">
 
-    <fragment
-        android:id="@+id/map_container"
+    <!--<fragment-->
+        <!--android:id="@+id/map_container"-->
+        <!--android:layout_width="match_parent"-->
+        <!--android:layout_height="match_parent"-->
+        <!--android:name="com.google.android.gms.maps.MapFragment"-->
+    <!--/>-->
+
+    <org.osmdroid.views.MapView
+        android:id="@+id/map"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:name="com.google.android.gms.maps.MapFragment"
     />
 
 </RelativeLayout>
