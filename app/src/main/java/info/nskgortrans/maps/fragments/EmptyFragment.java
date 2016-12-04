@@ -25,7 +25,7 @@ public class EmptyFragment extends Fragment
     // Inflate the layout for this fragment
     View view = inflater.inflate(R.layout.empty_fragment, container, false);
 
-    ((MainActivity) getActivity()).showBtns();
+    ((MainActivity) getActivity()).showBtns(true);
 
     return view;
   }

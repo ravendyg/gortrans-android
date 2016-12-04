@@ -1,12 +1,14 @@
 package info.nskgortrans.maps;
 
 import android.Manifest;
+import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.os.AsyncTask;
 import android.preference.PreferenceManager;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
@@ -45,6 +47,7 @@ import info.nskgortrans.maps.fragments.BusSearchFragment;
 import info.nskgortrans.maps.fragments.EmptyFragment;
 
 import static android.R.id.empty;
+import static android.icu.lang.UCharacter.GraphemeClusterBreak.V;
 
 public class MainActivity extends AppCompatActivity
 {
@@ -59,6 +62,7 @@ public class MainActivity extends AppCompatActivity
   private MapView map;
 
   private ArrayList<WayGroup> wayGroups;
+  private String wayGroupsStr;
 
   private BroadcastReceiver socketReceiver;
 
@@ -66,12 +70,15 @@ public class MainActivity extends AppCompatActivity
 
   private FrameLayout menuHolder;
 
+  private boolean waysLoaded;
+
 //  private SocketIO socket;
 
   @Override
   protected void onCreate(Bundle savedInstanceState)
   {
     super.onCreate(savedInstanceState);
+    setContentView(R.layout.activity_main);
 
     // make sure all permissions granted
     if ( ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) !=
@@ -97,10 +104,7 @@ public class MainActivity extends AppCompatActivity
       notGrantedPermissions--;
     }
 
-    if (notGrantedPermissions == 0)
-    {
-      init(savedInstanceState != null);
-    }
+
 
     menuHolder = (FrameLayout) findViewById(R.id.fragment_view);
 
@@ -111,6 +115,38 @@ public class MainActivity extends AppCompatActivity
         EmptyFragment empty = new EmptyFragment();
         getSupportFragmentManager().beginTransaction().add(R.id.fragment_view, empty).commit();
       }
+    }
+    else
+    {
+      wayGroupsStr = savedInstanceState.getString("savedWays");
+      if (wayGroupsStr != null)
+      {
+        try
+        {
+          wayGroups = JSONParser.getWayGroups( new JSONObject(wayGroupsStr));
+        }
+        catch (JSONException err)
+        {
+        }
+      }
+    }
+
+    if (notGrantedPermissions == 0)
+    {
+      init();
+      if (wayGroups == null)
+      {
+        new SyncData(false).execute();
+      }
+      else
+      {
+        waysLoaded = true;
+        showBtns(false);
+      }
+    }
+    else
+    {
+      // do smth about permissions
     }
 
     // add click listeners to the buttons
@@ -127,13 +163,11 @@ public class MainActivity extends AppCompatActivity
 
   }
 
-  private void init(boolean loaded)
+  private void init()
   {
+    waysLoaded = false;
+
     pref = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
-
-    performSync(loaded);
-
-    setContentView(R.layout.activity_main);
 
     // set user agent for the map
     org.osmdroid.tileprovider.constants.OpenStreetMapTileProviderConstants.setUserAgentValue(BuildConfig.APPLICATION_ID);
@@ -179,8 +213,6 @@ public class MainActivity extends AppCompatActivity
 
     startService(new Intent(this, BusPositionService.class));
 
-    wayGroups = new ArrayList<>(Arrays.asList(new WayGroup[0]));
-
     return;
   }
 
@@ -217,79 +249,87 @@ public class MainActivity extends AppCompatActivity
   }
 
   @Override
+  protected void onSaveInstanceState(Bundle outState) {
+    super.onSaveInstanceState(outState);
+    outState.putString("savedWays", wayGroupsStr);
+  }
+
+  @Override
   protected void onDestroy()
   {
     super.onDestroy();
 
-    unregisterReceiver(socketReceiver);
+    if (socketReceiver != null)
+    {
+      unregisterReceiver(socketReceiver);
+    }
     // stop bus position service
     stopService( new Intent(this, BusPositionService.class) );
   }
 
-  private void performSync(final boolean loaded)
+  private class SyncData extends AsyncTask<URL, Void, String>
   {
     final String TAG = "sync request";
+    private boolean loaded;
 
-    new Thread(new Runnable()
+    public SyncData(boolean _loaded)
+    {
+      loaded = _loaded;
+    }
+
+    protected String doInBackground(URL... urls)
     {
       HttpURLConnection connection = null;
       BufferedReader reader = null;
 
+      long routesTimestamp = 0, trassesTimestamp = 0, stopsTimestamp = 0;
 
-      @Override
-      public void run()
+      JSONObject result = new JSONObject(), newResult = new JSONObject();
+
+      String syncFileString = "", syncWebStr = "";
+      if ( FileAPI.isFileExists(getBaseContext(), getString(R.string.routes_file)) )
       {
-        long routesTimestamp = 0, trassesTimestamp = 0, stopsTimestamp = 0;
-
-        JSONObject result = new JSONObject(), newResult = new JSONObject();
-
-        String syncFileString = "";
-        if ( FileAPI.isFileExists(getBaseContext(), getString(R.string.routes_file)) )
-        {
-          try
-          {
-            syncFileString = FileAPI.readFile(getBaseContext(), getString(R.string.routes_file));
-            result = new JSONObject(syncFileString);
-            routesTimestamp = JSONParser.getTimestamp(result, "routes");
-            trassesTimestamp = JSONParser.getTimestamp(result, "trasses");
-            stopsTimestamp = JSONParser.getTimestamp(result, "stopsData");
-          }
-          catch (JSONException err)
-          {
-            Log.e(TAG, "read file json error", err);
-          }
-          catch (Exception err)
-          {
-            Log.e(TAG, "read file general error", err);
-          }
-        }
-
         try
         {
-          if (!loaded)
+          syncFileString = FileAPI.readFile(getBaseContext(), getString(R.string.routes_file));
+          result = new JSONObject(syncFileString);
+          routesTimestamp = JSONParser.getTimestamp(result, "routes");
+          trassesTimestamp = JSONParser.getTimestamp(result, "trasses");
+          stopsTimestamp = JSONParser.getTimestamp(result, "stopsData");
+        }
+        catch (JSONException err)
+        {
+          Log.e(TAG, "read file json error", err);
+        }
+        catch (Exception err)
+        {
+          Log.e(TAG, "read file general error", err);
+        }
+      }
+
+      try
+      {
+        if (!loaded)
+        {
+          URL syncUrl = new URL(
+                  getString(R.string.base_url) +
+                          "/sync?" +
+                          "routestimestamp=" + routesTimestamp +
+                          "&trassestimestamp=" + trassesTimestamp +
+                          "&stopstimestamp=" + stopsTimestamp
+          );
+
+          connection = (HttpURLConnection) syncUrl.openConnection();
+          connection.setRequestMethod("GET");
+          connection.setConnectTimeout(5000);
+          connection.setReadTimeout(5000);
+          connection.connect();
+
+          InputStream input = connection.getInputStream();
+          StringBuffer buffer = new StringBuffer();
+
+          if (input != null)
           {
-            URL syncUrl = new URL(
-                    getString(R.string.base_url) +
-                            "/sync?" +
-                            "routestimestamp=" + routesTimestamp +
-                            "&trassestimestamp=" + trassesTimestamp +
-                            "&stopstimestamp=" + stopsTimestamp
-            );
-
-            connection = (HttpURLConnection) syncUrl.openConnection();
-            connection.setRequestMethod("GET");
-            connection.setConnectTimeout(5000);
-            connection.setReadTimeout(5000);
-            connection.connect();
-
-            InputStream input = connection.getInputStream();
-            StringBuffer buffer = new StringBuffer();
-
-            if (input == null)
-            {
-              return;
-            }
-
             reader = new BufferedReader(new InputStreamReader(input));
 
             String line;
@@ -298,68 +338,82 @@ public class MainActivity extends AppCompatActivity
               buffer.append(line + "\n");
             }
 
-            syncFileString = buffer.toString();
+            syncWebStr = buffer.toString();
           }
-
-          try
-          {
-            if (syncFileString.length() > 0)
-            {
-              newResult = new JSONObject(syncFileString);
-
-              System.out.println("I got a JSONObject: " + newResult);
-
-              long newRoutesTimestamp = JSONParser.getTimestamp(newResult, "routes");
-              long newTrassesTimestamp = JSONParser.getTimestamp(newResult, "trasses");
-              long newStopsTimestamp = JSONParser.getTimestamp(newResult, "stopsData");
-              if (newStopsTimestamp > stopsTimestamp ||
-                      newTrassesTimestamp > trassesTimestamp ||
-                      newRoutesTimestamp > routesTimestamp
-                      )
-              { // overwrite if any timestamp changed
-                FileAPI.writeFile(getBaseContext(), getString(R.string.routes_file));
-                result = newResult;
-              }
-            }
-
-            wayGroups = JSONParser.getWayGroups(result);
-
-            System.out.println(wayGroups);
-          }
-          catch (JSONException err)
-          {
-
-          }
-        }
-        catch (java.net.SocketTimeoutException e)
-        {
-         Log.e(TAG, "error", e);
-        }
-        catch (IOException e)
-        {
-         Log.e(TAG, "error", e);
-        }
-        finally
-        {
-         if (connection != null)
-         {
-           connection.disconnect();
-         }
-         if (reader != null)
-         {
-           try
-           {
-             reader.close();
-           }
-           catch (final IOException e)
-           {
-             Log.e(TAG, "closing stream", e);
-           }
-         }
         }
       }
-    }).start();
+      catch (java.net.SocketTimeoutException e)
+      {
+        Log.e(TAG, "error", e);
+      }
+      catch (IOException e)
+      {
+        Log.e(TAG, "error", e);
+      }
+      finally
+      {
+        if (connection != null)
+        {
+          connection.disconnect();
+        }
+        if (reader != null)
+        {
+          try
+          {
+            reader.close();
+          }
+          catch (final IOException e)
+          {
+            Log.e(TAG, "closing stream", e);
+          }
+        }
+      }
 
+      try
+      {
+        if (syncWebStr.length() > 0)
+        {
+          if (syncFileString.length() == 0)
+          {
+            syncFileString = syncWebStr;
+          }
+          newResult = new JSONObject(syncFileString);
+
+          System.out.println("I got a JSONObject: " + newResult);
+
+          long newRoutesTimestamp = JSONParser.getTimestamp(newResult, "routes");
+          long newTrassesTimestamp = JSONParser.getTimestamp(newResult, "trasses");
+          long newStopsTimestamp = JSONParser.getTimestamp(newResult, "stopsData");
+          if (newStopsTimestamp > stopsTimestamp ||
+                  newTrassesTimestamp > trassesTimestamp ||
+                  newRoutesTimestamp > routesTimestamp
+                  )
+          { // overwrite if any timestamp changed
+            FileAPI.writeFile(getBaseContext(), getString(R.string.routes_file), syncFileString);
+            result = newResult;
+            syncFileString = syncWebStr;
+          }
+        }
+
+        wayGroupsStr = syncFileString;
+        wayGroups = JSONParser.getWayGroups(result);
+
+        System.out.println(wayGroups);
+      }
+      catch (JSONException err)
+      {
+
+      }
+
+
+      return "";
+    }
+
+    protected void onPostExecute (String time)
+    {
+      waysLoaded = true;
+      showBtns(false);
+    }
   }
 
 
@@ -409,6 +463,10 @@ public class MainActivity extends AppCompatActivity
     if (menuHolder != null)
     {
       BusSearchFragment menu = new BusSearchFragment();
+      Bundle bundle = new Bundle();
+      bundle.putSerializable("ways", wayGroups);
+      menu.setArguments(bundle);
+
       getSupportFragmentManager()
         .beginTransaction()
         .replace(R.id.fragment_view, menu)
@@ -425,9 +483,10 @@ public class MainActivity extends AppCompatActivity
     }
   }
 
-  public void showBtns()
+  public void showBtns(boolean fromEmpty)
   {
-    if (busSearchBtn != null)
+    View empty = findViewById(R.id.empty_fragment);
+    if (busSearchBtn != null && (empty != null || fromEmpty) && waysLoaded)
     {
       busSearchBtn.setVisibility(View.VISIBLE);
     }
@@ -457,7 +516,17 @@ public class MainActivity extends AppCompatActivity
 
     if (notGrantedPermissions == 0)
     {
-      init(false);
+//      if (wayGroups == null)
+//      {
+//        new SyncData(false).execute();
+//        init();
+//      }
+//      else
+//      {
+//        waysLoaded = true;
+//        showBtns(false);
+//      }
+      recreate();
     }
 
     return;

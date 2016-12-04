@@ -9,11 +9,20 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
+import android.widget.ListView;
 
+import java.lang.reflect.Array;
+import java.util.ArrayList;
+import java.util.Arrays;
+
+import info.nskgortrans.maps.Adapters.WayGroupsAdapter;
+import info.nskgortrans.maps.DataClasses.WayGroup;
 import info.nskgortrans.maps.MainActivity;
 import info.nskgortrans.maps.R;
 
+import static android.R.attr.theme;
 import static android.R.attr.width;
+import static android.R.id.list;
 
 /**
  * Created by me on 4/12/16.
@@ -21,6 +30,12 @@ import static android.R.attr.width;
 
 public class BusSearchFragment extends Fragment
 {
+  private ArrayList<WayGroup> _wayGroups,
+          wayGroups;
+
+  private WayGroupsAdapter adapter;
+  private ListView list;
+
   @Override
   public View onCreateView(LayoutInflater inflater, ViewGroup container,
                            Bundle savedInstanceState) {
@@ -40,7 +55,23 @@ public class BusSearchFragment extends Fragment
 
     ((MainActivity) getActivity()).hideBtns();
 
+    wayGroups = (ArrayList<WayGroup>) getArguments().getSerializable("ways");
+    _wayGroups = (ArrayList<WayGroup>) getArguments().getSerializable("ways");
+
+    adapter = new WayGroupsAdapter(getContext(), wayGroups);
+    list = (ListView) view.findViewById(R.id.wayGroups);
+    list.setAdapter(adapter);
 
     return view;
+  }
+
+  private void copyWayGroups(String filter)
+  {
+    for (int i=0; i < _wayGroups.size(); i++)
+    {
+      wayGroups.get(i).setWays( _wayGroups.get(i).getMatching(filter) );
+    }
+
+    adapter.notifyDataSetChanged();
   }
 }
