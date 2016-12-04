@@ -104,10 +104,13 @@ public class MainActivity extends AppCompatActivity
 
     menuHolder = (FrameLayout) findViewById(R.id.fragment_view);
 
-    if (menuHolder != null)
-    {
-      EmptyFragment empty = new EmptyFragment();
-      getSupportFragmentManager().beginTransaction().add(R.id.fragment_view, empty).commit();
+    if (savedInstanceState == null)
+    { // start with empty fragment
+      if (menuHolder != null)
+      {
+        EmptyFragment empty = new EmptyFragment();
+        getSupportFragmentManager().beginTransaction().add(R.id.fragment_view, empty).commit();
+      }
     }
 
     // add click listeners to the buttons
@@ -152,8 +155,6 @@ public class MainActivity extends AppCompatActivity
     mapController.setCenter(startPoint);
     /** /init map */
 
-    startService(new Intent(this, BusPositionService.class));
-
     // hardcoded behaviour: register receiver that will listen for bus 36
     if (socketReceiver == null)
     {
@@ -176,9 +177,17 @@ public class MainActivity extends AppCompatActivity
     }
     registerReceiver(socketReceiver, new IntentFilter("gortrans-socket-activity"));
 
+    startService(new Intent(this, BusPositionService.class));
+
     wayGroups = new ArrayList<>(Arrays.asList(new WayGroup[0]));
 
     return;
+  }
+
+  @Override
+  public void onResume()
+  {
+    super.onResume();
   }
 
   @Override
@@ -211,6 +220,8 @@ public class MainActivity extends AppCompatActivity
   protected void onDestroy()
   {
     super.onDestroy();
+
+    unregisterReceiver(socketReceiver);
     // stop bus position service
     stopService( new Intent(this, BusPositionService.class) );
   }
@@ -403,9 +414,6 @@ public class MainActivity extends AppCompatActivity
         .replace(R.id.fragment_view, menu)
         .addToBackStack(null)
         .commit();
-
-      hideBtns();
-
     }
   }
 

@@ -10,6 +10,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
 
+import info.nskgortrans.maps.MainActivity;
 import info.nskgortrans.maps.R;
 
 import static android.R.attr.width;
@@ -37,6 +38,7 @@ public class BusSearchFragment extends Fragment
             width, LinearLayout.LayoutParams.MATCH_PARENT
     ));
 
+    ((MainActivity) getActivity()).hideBtns();
 
 
     return view;
