@@ -11,14 +11,14 @@ public class Way
   public String marsh;
   public String name;
   public String stopb;
-  public String stopa;
+  public String stope;
 
   public Way(JSONObject input)
     throws JSONException
   {
     marsh = input.getString("marsh");
     name  = input.getString("name");
-    stopa = input.getString("stopa");
+    stope = input.getString("stope");
     stopb = input.getString("stopb");
   }
 }

@@ -7,7 +7,6 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
-import android.content.pm.ProviderInfo;
 import android.preference.PreferenceManager;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
@@ -33,10 +32,8 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-import info.nskgortrans.maps.DataClasses.Route;
+import info.nskgortrans.maps.DataClasses.WayGroup;
 import info.nskgortrans.maps.Services.BusPositionService;
-
-import static info.nskgortrans.maps.R.id.map;
 
 public class MainActivity extends AppCompatActivity
 {
@@ -50,7 +47,7 @@ public class MainActivity extends AppCompatActivity
   private SharedPreferences pref;
   private MapView map;
 
-  private ArrayList<Route> listMarsh;
+  private ArrayList<WayGroup> wayGroups;
 
   private BroadcastReceiver socketReceiver;
 
@@ -96,12 +93,7 @@ public class MainActivity extends AppCompatActivity
   {
     pref = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
 
-    long routesTimestamp = pref.getLong(getString(R.string.routes_timestamp), 0);
-    long trassesTimestamp = pref.getLong(getString(R.string.routes_timestamp), 0);
-    long stopsTimestamp = pref.getLong(getString(R.string.routes_timestamp), 0);
-
-//    performSync(routesTimestamp, trassesTimestamp, stopsTimestamp);
-    performSync(0, 0, 0);
+    performSync();
 
     setContentView(R.layout.activity_main);
 
@@ -152,6 +144,8 @@ public class MainActivity extends AppCompatActivity
     }
     registerReceiver(socketReceiver, new IntentFilter("gortrans-socket-activity"));
 
+    wayGroups = new ArrayList<>(Arrays.asList(new WayGroup[0]));
+
     return;
   }
 
@@ -189,18 +183,43 @@ public class MainActivity extends AppCompatActivity
     stopService( new Intent(this, BusPositionService.class) );
   }
 
-  private void performSync(final long routesTimestamp, final long trassesTimestamp, final long stopsTimestamp)
+  private void performSync()
   {
     final String TAG = "sync request";
+
     new Thread(new Runnable()
     {
       HttpURLConnection connection = null;
       BufferedReader reader = null;
 
+
       @Override
       public void run()
       {
-        JSONObject result;
+        long routesTimestamp = 0, trassesTimestamp = 0, stopsTimestamp = 0;
+
+        JSONObject result = new JSONObject(), newResult = new JSONObject();
+
+        String syncFileString = "";
+        if ( FileAPI.isFileExists(getBaseContext(), getString(R.string.routes_file)) )
+        {
+          try
+          {
+            syncFileString = FileAPI.readFile(getBaseContext(), getString(R.string.routes_file));
+            result = new JSONObject(syncFileString);
+            routesTimestamp = JSONParser.getTimestamp(result, "routes");
+            trassesTimestamp = JSONParser.getTimestamp(result, "trasses");
+            stopsTimestamp = JSONParser.getTimestamp(result, "stopsData");
+          }
+          catch (JSONException err)
+          {
+            Log.e(TAG, "read file json error", err);
+          }
+          catch (Exception err)
+          {
+            Log.e(TAG, "read file general error", err);
+          }
+        }
 
         try
         {
@@ -234,43 +253,36 @@ public class MainActivity extends AppCompatActivity
             buffer.append(line + "\n");
           }
 
-          if (buffer.length() == 0)
-          {
-            return;
-          }
+          syncFileString = buffer.toString();
 
           try
           {
-            result = new JSONObject( buffer.toString() );
-
-            System.out.println("I got a JSONObject: " + result);
-
-            SharedPreferences.Editor editor = pref.edit();
-
-            long newRoutesTimestamp = JSONParser.getTimestamp(result, "routes");
-            if (newRoutesTimestamp > routesTimestamp)
+            if (syncFileString.length() > 0)
             {
-              editor.putLong( getString(R.string.routes_timestamp), newRoutesTimestamp );
-            }
-            long newTrassesTimestamp = JSONParser.getTimestamp(result, "trasses");
-            if (newTrassesTimestamp > trassesTimestamp)
-            {
-              editor.putLong( getString(R.string.trasses_timestamp), newTrassesTimestamp );
-            }
-            long newStopsTimestamp = JSONParser.getTimestamp(result, "stopsData");
-            if (newStopsTimestamp > stopsTimestamp)
-            {
-              editor.putLong( getString(R.string.stops_timestamp), newStopsTimestamp );
-            }
-            editor.commit();
+              newResult = new JSONObject(syncFileString);
 
-            listMarsh = JSONParser.getRoutes(result);
+              System.out.println("I got a JSONObject: " + newResult);
 
-            System.out.println(newRoutesTimestamp + " " + newTrassesTimestamp + " " + newStopsTimestamp);
+              long newRoutesTimestamp = JSONParser.getTimestamp(newResult, "routes");
+              long newTrassesTimestamp = JSONParser.getTimestamp(newResult, "trasses");
+              long newStopsTimestamp = JSONParser.getTimestamp(newResult, "stopsData");
+              if (newStopsTimestamp > stopsTimestamp ||
+                      newTrassesTimestamp > trassesTimestamp ||
+                      newRoutesTimestamp > routesTimestamp
+                      )
+              { // overwrite if any timestamp changed
+                FileAPI.writeFile(getBaseContext(), getString(R.string.routes_file));
+                result = newResult;
+              }
+            }
+
+            wayGroups = JSONParser.getWayGroups(result);
+
+            System.out.println(wayGroups);
           }
           catch (JSONException err)
           {
-            listMarsh = new ArrayList<Route>(Arrays.asList(new Route[0]));
+
           }
         }
         catch (java.net.SocketTimeoutException e)
@@ -302,11 +314,6 @@ public class MainActivity extends AppCompatActivity
       }
     }).start();
 
-    String routesFileString = "";
-    if ( FileAPI.isFileExists(getBaseContext(), getString(R.string.routes_file)) )
-    {
-      routesFileString = FileAPI.readFile(getBaseContext(), getString(R.string.routes_file));
-    }
   }
 
 

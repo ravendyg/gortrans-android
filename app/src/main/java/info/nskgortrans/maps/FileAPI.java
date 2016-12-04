@@ -44,4 +44,9 @@ public class FileAPI
 
     return out;
   }
+
+  public static void writeFile(Context context, String filename)
+  {
+
+  }
 }

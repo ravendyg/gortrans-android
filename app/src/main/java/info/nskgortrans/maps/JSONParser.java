@@ -1,5 +1,7 @@
 package info.nskgortrans.maps;
 
+import android.util.Log;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -7,7 +9,8 @@ import org.json.JSONObject;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-import info.nskgortrans.maps.DataClasses.Route;
+import info.nskgortrans.maps.DataClasses.Way;
+import info.nskgortrans.maps.DataClasses.WayGroup;
 
 /**
  * Created by me on 6/11/16.
@@ -28,10 +31,10 @@ public class JSONParser
     return timestamp;
   }
 
-  public static ArrayList <Route> getRoutes(JSONObject input)
+  public static ArrayList <WayGroup> getWayGroups(JSONObject input)
     throws JSONException
   {
-    ArrayList <Route> listMarsh = new ArrayList<>(Arrays.asList(new Route[0]));
+    ArrayList <WayGroup> wayGroups = new ArrayList<>(Arrays.asList(new WayGroup[0]));
 
     JSONArray routes = input.getJSONObject("routes").getJSONArray("routes");
 
@@ -39,12 +42,26 @@ public class JSONParser
     {
       try
       {
-        listMarsh.add(new Route(routes.getJSONObject(i)));
+        JSONObject rawRoute = routes.getJSONObject(i);
+        int type = rawRoute.getInt("type");
+
+        WayGroup group = new WayGroup(type);
+
+        JSONArray ways = rawRoute.getJSONArray("ways");
+        for (int j = 0; j < ways.length(); j++)
+        {
+          JSONObject way = ways.getJSONObject(j);
+          group.addWay( new Way(way) );
+        }
+
+        wayGroups.add(group);
       }
       catch (JSONException err)
-      {}
+      {
+        Log.e("JSON parser", "error", err);
+      }
     }
 
-    return listMarsh;
+    return wayGroups;
   }
 }
