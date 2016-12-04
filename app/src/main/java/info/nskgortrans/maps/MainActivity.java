@@ -9,10 +9,17 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.preference.PreferenceManager;
 import android.support.v4.app.ActivityCompat;
+import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentManager;
 import android.support.v4.content.ContextCompat;
+import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.widget.AppCompatImageButton;
 import android.util.Log;
+import android.view.View;
+import android.widget.FrameLayout;
+import android.widget.LinearLayout;
 
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -34,6 +41,10 @@ import java.util.Arrays;
 
 import info.nskgortrans.maps.DataClasses.WayGroup;
 import info.nskgortrans.maps.Services.BusPositionService;
+import info.nskgortrans.maps.fragments.BusSearchFragment;
+import info.nskgortrans.maps.fragments.EmptyFragment;
+
+import static android.R.id.empty;
 
 public class MainActivity extends AppCompatActivity
 {
@@ -50,6 +61,10 @@ public class MainActivity extends AppCompatActivity
   private ArrayList<WayGroup> wayGroups;
 
   private BroadcastReceiver socketReceiver;
+
+  private AppCompatImageButton busSearchBtn;
+
+  private FrameLayout menuHolder;
 
 //  private SocketIO socket;
 
@@ -84,16 +99,36 @@ public class MainActivity extends AppCompatActivity
 
     if (notGrantedPermissions == 0)
     {
-      init();
+      init(savedInstanceState != null);
     }
+
+    menuHolder = (FrameLayout) findViewById(R.id.fragment_view);
+
+    if (menuHolder != null)
+    {
+      EmptyFragment empty = new EmptyFragment();
+      getSupportFragmentManager().beginTransaction().add(R.id.fragment_view, empty).commit();
+    }
+
+    // add click listeners to the buttons
+    busSearchBtn = (AppCompatImageButton) findViewById(R.id.bus_search_btn);
+    busSearchBtn.setOnClickListener(
+      new View.OnClickListener()
+      {
+        public void onClick(View v)
+        {
+          showBusSearch();
+        }
+      }
+    );
 
   }
 
-  private void init()
+  private void init(boolean loaded)
   {
     pref = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
 
-    performSync();
+    performSync(loaded);
 
     setContentView(R.layout.activity_main);
 
@@ -127,9 +162,6 @@ public class MainActivity extends AppCompatActivity
         @Override
         public void onReceive(Context context, Intent intent)
         {
-//        // Get extra data included in the Intent
-//        String message = intent.getStringExtra("message");
-//        Log.d("receiver", "Got message: " + message);
           String eventType = intent.getStringExtra("event");
           if ( eventType.equals("connection") )
           {
@@ -183,7 +215,7 @@ public class MainActivity extends AppCompatActivity
     stopService( new Intent(this, BusPositionService.class) );
   }
 
-  private void performSync()
+  private void performSync(final boolean loaded)
   {
     final String TAG = "sync request";
 
@@ -223,37 +255,40 @@ public class MainActivity extends AppCompatActivity
 
         try
         {
-         URL syncUrl = new URL(
-           getString(R.string.base_url) +
-                   "/sync?" +
-                   "routestimestamp=" + routesTimestamp +
-                   "&trassestimestamp=" + trassesTimestamp +
-                   "&stopstimestamp=" + stopsTimestamp
-         );
-
-         connection = (HttpURLConnection) syncUrl.openConnection();
-         connection.setRequestMethod("GET");
-         connection.setConnectTimeout(5000);
-         connection.setReadTimeout(5000);
-         connection.connect();
-
-         InputStream input = connection.getInputStream();
-         StringBuffer buffer = new StringBuffer();
-
-          if (input == null)
+          if (!loaded)
           {
-            return;
+            URL syncUrl = new URL(
+                    getString(R.string.base_url) +
+                            "/sync?" +
+                            "routestimestamp=" + routesTimestamp +
+                            "&trassestimestamp=" + trassesTimestamp +
+                            "&stopstimestamp=" + stopsTimestamp
+            );
+
+            connection = (HttpURLConnection) syncUrl.openConnection();
+            connection.setRequestMethod("GET");
+            connection.setConnectTimeout(5000);
+            connection.setReadTimeout(5000);
+            connection.connect();
+
+            InputStream input = connection.getInputStream();
+            StringBuffer buffer = new StringBuffer();
+
+            if (input == null)
+            {
+              return;
+            }
+
+            reader = new BufferedReader(new InputStreamReader(input));
+
+            String line;
+            while ((line = reader.readLine()) != null)
+            {
+              buffer.append(line + "\n");
+            }
+
+            syncFileString = buffer.toString();
           }
-
-          reader = new BufferedReader(new InputStreamReader(input));
-
-          String line;
-          while ((line = reader.readLine()) != null)
-          {
-            buffer.append(line + "\n");
-          }
-
-          syncFileString = buffer.toString();
 
           try
           {
@@ -357,6 +392,39 @@ public class MainActivity extends AppCompatActivity
 
   }
 
+
+  public void showBusSearch()
+  {
+    if (menuHolder != null)
+    {
+      BusSearchFragment menu = new BusSearchFragment();
+      getSupportFragmentManager()
+        .beginTransaction()
+        .replace(R.id.fragment_view, menu)
+        .addToBackStack(null)
+        .commit();
+
+      hideBtns();
+
+    }
+  }
+
+  public void hideBtns()
+  {
+    if (busSearchBtn != null)
+    {
+      busSearchBtn.setVisibility(View.INVISIBLE);
+    }
+  }
+
+  public void showBtns()
+  {
+    if (busSearchBtn != null)
+    {
+      busSearchBtn.setVisibility(View.VISIBLE);
+    }
+  }
+
   // permissions handling
   @Override
   public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults)
@@ -381,7 +449,7 @@ public class MainActivity extends AppCompatActivity
 
     if (notGrantedPermissions == 0)
     {
-      init();
+      init(false);
     }
 
     return;

@@ -3,6 +3,8 @@
 
     <string name="base_url">https://maps.nskgortrans.info</string>
 
+    <string name="search_btn">Поиск</string>
+
     <string name="pref_lat">map_lat</string>
     <string name="pref_lng">map_lng</string>
     <string name="pref_zoom">map_zoom</string>
