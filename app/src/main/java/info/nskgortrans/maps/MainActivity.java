@@ -1,7 +1,6 @@
 package info.nskgortrans.maps;
 
 import android.Manifest;
-import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -11,17 +10,13 @@ import android.content.pm.PackageManager;
 import android.os.AsyncTask;
 import android.preference.PreferenceManager;
 import android.support.v4.app.ActivityCompat;
-import android.support.v4.app.Fragment;
-import android.support.v4.app.FragmentManager;
 import android.support.v4.content.ContextCompat;
-import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.AppCompatImageButton;
 import android.util.Log;
 import android.view.View;
 import android.widget.FrameLayout;
-import android.widget.LinearLayout;
 
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -39,15 +34,11 @@ import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.Arrays;
 
 import info.nskgortrans.maps.DataClasses.WayGroup;
 import info.nskgortrans.maps.Services.BusPositionService;
-import info.nskgortrans.maps.fragments.BusSearchFragment;
-import info.nskgortrans.maps.fragments.EmptyFragment;
-
-import static android.R.id.empty;
-import static android.icu.lang.UCharacter.GraphemeClusterBreak.V;
+import info.nskgortrans.maps.Fragments.BusSearchFragment;
+import info.nskgortrans.maps.Fragments.EmptyFragment;
 
 public class MainActivity extends AppCompatActivity
 {

@@ -18,4 +18,6 @@
     <string name="trasses_timestamp">trasses_timestamp</string>
     <string name="stops_file">stops_file</string>
     <string name="stops_timestamp">stops_timestamp</string>
+
+    <string name="search_hint">Номер маршрута</string>
 </resources>

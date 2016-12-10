@@ -3,6 +3,8 @@ package info.nskgortrans.maps.DataClasses;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import static android.R.id.input;
+
 /**
  * Created by me on 6/11/16.
  */
@@ -21,4 +23,13 @@ public class Way
     stope = input.getString("stope");
     stopb = input.getString("stopb");
   }
+
+  public Way(String _name)
+  {
+    marsh = "";
+    name  = _name;
+    stope = "";
+    stopb = "";
+  }
+
 }
