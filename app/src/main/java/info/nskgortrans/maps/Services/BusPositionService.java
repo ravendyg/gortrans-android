@@ -17,7 +17,7 @@ import com.github.nkzawa.socketio.client.Socket;
 import org.json.JSONObject;
 
 import java.net.URISyntaxException;
-import java.util.logging.Handler;
+import android.os.Handler;
 import java.util.logging.LogRecord;
 
 /**
@@ -26,10 +26,15 @@ import java.util.logging.LogRecord;
 public class BusPositionService extends Service
 {
   private static final String LOG_TAG = "Bus position service";
+  private static final long DATA_WITHOUT_ACTIVITY = 1000 * 60 * 5;
+  private static final long LIVE_WITHOUT_ACTIVITY = 1000 * 60 * 30;
+
+  private Handler countDownHandler;
+  private Runnable countDownRunnableData, countDownRunnableLife;
 
   private Socket socketIO;
 
-  private BroadcastReceiver socketReceiver;
+  private BroadcastReceiver mainReceiver;
 
 
   public void onCreate()
@@ -37,32 +42,61 @@ public class BusPositionService extends Service
     super.onCreate();
     Log.e(LOG_TAG, "onCreate");
 
+    countDownHandler = new Handler();
+
+//    // hardcoded behaviour: register receiver that will listen for bus 36
+//    if (socketReceiver == null)
+//    {
+//      socketReceiver = new BroadcastReceiver()
+//      {
+//        @Override
+//        public void onReceive(Context context, Intent intent)
+//        {
+//          String eventType = intent.getStringExtra("event");
+//          if ( eventType.equals("request add bus") )
+//          {
+//            String busCode = intent.getStringExtra("busCode");
+//            addBusListener(busCode);
+//          }
+//        }
+//      };
+//    }
+//    registerReceiver(socketReceiver, new IntentFilter("gortrans-socket-service"));
+
     // hardcoded behaviour: register receiver that will listen for bus 36
-    if (socketReceiver == null)
+    if (mainReceiver == null)
     {
-      socketReceiver = new BroadcastReceiver()
+      mainReceiver = new BroadcastReceiver()
       {
         @Override
         public void onReceive(Context context, Intent intent)
         {
           String eventType = intent.getStringExtra("event");
-          if ( eventType.equals("request add bus") )
+          if (eventType.equals("activity-offline"))
           {
-            String busCode = intent.getStringExtra("busCode");
-            addBusListener(busCode);
+            startFinalCountdown();
+          }
+          else if (eventType.equals("activity-online"))
+          {
+            if (countDownRunnableData != null) {
+              countDownHandler.removeCallbacks(countDownRunnableData);
+              countDownRunnableData = null;
+            }
+            if (countDownRunnableLife != null) {
+              countDownHandler.removeCallbacks(countDownRunnableLife);
+              countDownRunnableLife = null;
+            }
           }
         }
       };
     }
-    registerReceiver(socketReceiver, new IntentFilter("gortrans-socket-service"));
+    registerReceiver(mainReceiver, new IntentFilter("gortrans-bus-service"));
 
-    connectToSocket();
+//    connectToSocket();
   }
 
   public int onStartCommand(Intent intent, int flags, int startId)
   {
-    Log.e(LOG_TAG, "onStart");
-
     return super.onStartCommand(intent, flags, startId);
   }
 
@@ -72,10 +106,32 @@ public class BusPositionService extends Service
     return new Binder();
   }
 
-  public void onDestroy()
-  {
+  public void onDestroy() {
     super.onDestroy();
-    Log.e(LOG_TAG, "onDestroy");
+
+  }
+
+  private void startFinalCountdown()
+  {
+    countDownRunnableData = new Runnable()
+    {
+      @Override
+      public void run()
+      {
+        // stop receiving data
+      }
+    };
+    countDownHandler.postDelayed(countDownRunnableData, DATA_WITHOUT_ACTIVITY);
+
+    countDownRunnableLife = new Runnable()
+    {
+      @Override
+      public void run()
+      {
+        stopSelf();
+      }
+    };
+    countDownHandler.postDelayed(countDownRunnableLife, LIVE_WITHOUT_ACTIVITY);
   }
 
   private void connectToSocket()

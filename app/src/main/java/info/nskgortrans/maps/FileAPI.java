@@ -1,7 +1,6 @@
 package info.nskgortrans.maps;
 
 import android.content.Context;
-import android.icu.util.Output;
 
 import java.io.BufferedReader;
 import java.io.File;

@@ -2,7 +2,7 @@ apply plugin: 'com.android.application'
 
 android {
     compileSdkVersion 24
-    buildToolsVersion "24.0.0"
+    buildToolsVersion "24.0.1"
 
     defaultConfig {
         applicationId "info.nskgortrans.maps"
@@ -29,4 +29,5 @@ dependencies {
     compile 'com.android.support:appcompat-v7:24.2.1'
     compile 'com.github.nkzawa:socket.io-client:0.3.0'
     compile 'org.osmdroid:osmdroid-android:5.5:release@aar'
+    compile 'com.google.android.gms:play-services-appindexing:8.4.0'
 }
