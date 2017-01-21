@@ -42,7 +42,6 @@ public class WaysAdapter extends BaseAdapter
     data = _data.filteredData;
 
     inflater = (LayoutInflater) ctx.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-
   }
 
   @Override

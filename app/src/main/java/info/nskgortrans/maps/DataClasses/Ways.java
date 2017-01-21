@@ -1,15 +1,8 @@
 package info.nskgortrans.maps.DataClasses;
 
-import android.content.Context;
-import android.view.LayoutInflater;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 
-import static android.R.attr.data;
-import static android.R.attr.type;
-import static android.R.id.switch_widget;
-import static android.R.id.toggle;
 
 /**
  * Created by me on 10/12/16.

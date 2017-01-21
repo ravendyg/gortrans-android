@@ -18,6 +18,7 @@ public class WayGroupElement
   public String marsh;
   public int children;
   public boolean opened;
+  public String code;
 
   public WayGroupElement(Way way, int _type)
   {
@@ -26,6 +27,8 @@ public class WayGroupElement
     marsh = way.marsh;
     children = 0;
     opened = true;
+
+    code = type + "-" + marsh + "-W-" + name;
   }
 
   public WayGroupElement(String _name, int _type, int _children)

@@ -3,6 +3,7 @@ package info.nskgortrans.maps;
 import android.Manifest;
 import android.app.ActivityManager;
 import android.app.ActivityManager.RunningServiceInfo;
+import android.app.Dialog;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -10,15 +11,17 @@ import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.net.Uri;
-import android.os.AsyncTask;
 import android.preference.PreferenceManager;
+import android.support.design.widget.AppBarLayout;
+import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.support.v7.widget.AppCompatImageButton;
 import android.util.Log;
 import android.view.View;
+import android.view.Window;
+import android.view.WindowManager;
 import android.widget.FrameLayout;
 
 
@@ -54,6 +57,8 @@ import info.nskgortrans.maps.Fragments.EmptyFragment;
 public class MainActivity extends AppCompatActivity {
   private String LOG_TAG = "main activity";
 
+  final Context context = this;
+
   private int notGrantedPermissions = 2;
   private final int COARSE_LOCATION_PERMISSION_GRANTED = 10;
   private final int FINE_LOCATION_PERMISSION_GRANTED = 11;
@@ -67,11 +72,13 @@ public class MainActivity extends AppCompatActivity {
 
   private BroadcastReceiver serviceReceiver = null;
 
-  private AppCompatImageButton busSearchBtn;
-
   private FrameLayout menuHolder;
 
+  private SearchBusDialog searchDialog;
+
   private boolean waysLoaded;
+
+  private Dialog searchBusDialog = null;
   /**
    * ATTENTION: This was auto-generated to implement the App Indexing API.
    * See https://g.co/AppIndexing/AndroidStudio for more information.
@@ -197,7 +204,7 @@ public class MainActivity extends AppCompatActivity {
       sendBroadcast(intent);
     }
 
-    return;
+    searchDialog = new SearchBusDialog();
 
 
     /** /init map */
@@ -227,6 +234,17 @@ public class MainActivity extends AppCompatActivity {
 
   }
 
+  public void showSearchBusDialog(View bntView)
+  {
+    searchBusDialog = searchDialog.showDialog(context, wayGroups);
+  }
+
+  public void selectBus(final String code)
+  {
+    searchBusDialog.cancel();
+    Log.e("bus code: ", code);
+  }
+
   private void startListenForService()
   {
     if (serviceReceiver == null)
@@ -242,6 +260,16 @@ public class MainActivity extends AppCompatActivity {
             routesDataStr = intent.getStringExtra("way-groups");
             loadWayGrous();
           }
+//          else if (eventType.equals("busSelected"))
+//          { // from search bus dialog
+//            if (searchBusDialog != null)
+//            {
+//              searchBusDialog.cancel();
+//              searchBusDialog = null;
+//            }
+//            String busCode = intent.getStringExtra("busCode");
+//            Log.e("bus code: ", busCode);
+//          }
 //          if (eventType.equals("connection"))
 //          {
 //            requestBusOnMap("1-036-W-36");
@@ -276,6 +304,9 @@ public class MainActivity extends AppCompatActivity {
     GeoPoint startPoint = new GeoPoint(lat, lng);
     mapController.setCenter(startPoint);
   }
+
+
+
 
   @Override
   public void onResume() {
@@ -524,32 +555,27 @@ public class MainActivity extends AppCompatActivity {
   }
 
 
-  public void showBusSearch() {
-    if (menuHolder != null) {
-      BusSearchFragment menu = new BusSearchFragment();
-      Bundle bundle = new Bundle();
-      bundle.putSerializable("ways", wayGroups);
-      menu.setArguments(bundle);
-
-      getSupportFragmentManager()
-              .beginTransaction()
-              .replace(R.id.fragment_view, menu)
-              .addToBackStack(null)
-              .commit();
-    }
-  }
+//  public void showBusSearch() {
+//    if (menuHolder != null) {
+//      BusSearchFragment menu = new BusSearchFragment();
+//      Bundle bundle = new Bundle();
+//      bundle.putSerializable("ways", wayGroups);
+//      menu.setArguments(bundle);
+//
+//      getSupportFragmentManager()
+//              .beginTransaction()
+//              .replace(R.id.fragment_view, menu)
+//              .addToBackStack(null)
+//              .commit();
+//    }
+//  }
 
   public void hideBtns() {
-    if (busSearchBtn != null) {
-      busSearchBtn.setVisibility(View.INVISIBLE);
-    }
+
   }
 
   public void showBtns(boolean fromEmpty) {
-    View empty = findViewById(R.id.empty_fragment);
-    if (busSearchBtn != null && (empty != null || fromEmpty) && waysLoaded) {
-      busSearchBtn.setVisibility(View.VISIBLE);
-    }
+
   }
 
   // permissions handling
