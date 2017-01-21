@@ -63,9 +63,9 @@ public class MainActivity extends AppCompatActivity {
   private MapView map;
 
   private ArrayList<WayGroup> wayGroups;
-  private String wayGroupsStr;
+  private String routesDataStr = "";
 
-  private BroadcastReceiver socketReceiver;
+  private BroadcastReceiver serviceReceiver = null;
 
   private AppCompatImageButton busSearchBtn;
 
@@ -116,17 +116,13 @@ public class MainActivity extends AppCompatActivity {
 //    }
 //    else
 //    {
-//      wayGroupsStr = savedInstanceState.getString("savedWays");
-//      if (wayGroupsStr != null)
-//      {
-//        try
-//        {
-//          wayGroups = JSONParser.getWayGroups( new JSONObject(wayGroupsStr));
-//        }
-//        catch (JSONException err)
-//        {
-//        }
-//      }
+    if (savedInstanceState != null)
+    {
+      routesDataStr = savedInstanceState.getString("savedWays");
+      loadWayGrous();
+    }
+
+
 //    }
 //
     // if ok initialize map and start service
@@ -159,7 +155,21 @@ public class MainActivity extends AppCompatActivity {
 
     // ATTENTION: This was auto-generated to implement the App Indexing API.
     // See https://g.co/AppIndexing/AndroidStudio for more information.
-    client = new GoogleApiClient.Builder(this).addApi(AppIndex.API).build();
+//    client = new GoogleApiClient.Builder(this).addApi(AppIndex.API).build();
+  }
+
+  private void loadWayGrous()
+  {
+    if (routesDataStr != null)
+    {
+      try
+      {
+        wayGroups = JSONParser.getWayGroups( new JSONObject(routesDataStr));
+      }
+      catch (JSONException err)
+      {
+      }
+    }
   }
 
   private void init() {
@@ -167,7 +177,11 @@ public class MainActivity extends AppCompatActivity {
 
     pref = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
 
+
     initMap();
+
+
+    startListenForService();
 
     if (!isServiceRunning(BusPositionService.class))
     {
@@ -211,6 +225,35 @@ public class MainActivity extends AppCompatActivity {
 //    registerReceiver(socketReceiver, new IntentFilter("gortrans-socket-activity"));
 
 
+  }
+
+  private void startListenForService()
+  {
+    if (serviceReceiver == null)
+    {
+      serviceReceiver = new BroadcastReceiver()
+      {
+        @Override
+        public void onReceive(Context context, Intent intent)
+        {
+          String eventType = intent.getStringExtra("event");
+          if (eventType.equals(("wayGroups")))
+          {
+            routesDataStr = intent.getStringExtra("way-groups");
+            loadWayGrous();
+          }
+//          if (eventType.equals("connection"))
+//          {
+//            requestBusOnMap("1-036-W-36");
+//          }
+//          else if (eventType.equals("bus listener created") )
+//          {
+//            addBusToMap("1-036-W-36");
+//          }
+        }
+      };
+    }
+    registerReceiver(serviceReceiver, new IntentFilter("gortrans-main-activity"));
   }
 
   private void initMap() {
@@ -264,7 +307,7 @@ public class MainActivity extends AppCompatActivity {
   @Override
   protected void onSaveInstanceState(Bundle outState) {
     super.onSaveInstanceState(outState);
-    outState.putString("savedWays", wayGroupsStr);
+    outState.putString("savedWays", routesDataStr);
   }
 
   @Override
@@ -313,22 +356,22 @@ public class MainActivity extends AppCompatActivity {
   public void onStart() {
     super.onStart();
 
-    // ATTENTION: This was auto-generated to implement the App Indexing API.
-    // See https://g.co/AppIndexing/AndroidStudio for more information.
-    client.connect();
-    AppIndex.AppIndexApi.start(client, getIndexApiAction());
+//    // ATTENTION: This was auto-generated to implement the App Indexing API.
+//    // See https://g.co/AppIndexing/AndroidStudio for more information.
+//    client.connect();
+//    AppIndex.AppIndexApi.start(client, getIndexApiAction());
   }
 
   @Override
   public void onStop() {
     super.onStop();
 
-    // ATTENTION: This was auto-generated to implement the App Indexing API.
-    // See https://g.co/AppIndexing/AndroidStudio for more information.
-    AppIndex.AppIndexApi.end(client, getIndexApiAction());
-    client.disconnect();
+//    // ATTENTION: This was auto-generated to implement the App Indexing API.
+//    // See https://g.co/AppIndexing/AndroidStudio for more information.
+//    AppIndex.AppIndexApi.end(client, getIndexApiAction());
+//    client.disconnect();
   }
-
+/*
   private class SyncData extends AsyncTask<URL, Void, String> {
     final String TAG = "sync request";
     private boolean loaded;
@@ -446,7 +489,7 @@ public class MainActivity extends AppCompatActivity {
       showBtns(false);
     }
   }
-
+*/
 
   private void connectToSocket() {
     Log.e(LOG_TAG, "connect");

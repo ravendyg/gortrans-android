@@ -9,6 +9,9 @@
     <string name="pref_lng">map_lng</string>
     <string name="pref_zoom">map_zoom</string>
 
+    <string name="pref_api_key">api_key</string>
+    <string name="pref_last_sync">last_sync</string>
+
     <string name="start_bus_pos">Start bus positions</string>
     <string name="stop_bus_pos">Stop bus positions</string>
 

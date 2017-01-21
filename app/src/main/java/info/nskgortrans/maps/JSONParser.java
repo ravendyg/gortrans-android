@@ -17,12 +17,12 @@ import info.nskgortrans.maps.DataClasses.WayGroup;
  */
 public class JSONParser
 {
-  public static long getTimestamp(JSONObject input, String prop)
+  public static long getTimestamp(JSONObject input)
   {
     long timestamp = 0;
     try
     {
-      timestamp = input.getJSONObject(prop).getLong("timestamp");
+      timestamp = input.getLong("timestamp");
     }
     catch (JSONException err)
     {
@@ -36,7 +36,7 @@ public class JSONParser
   {
     ArrayList <WayGroup> wayGroups = new ArrayList<>(Arrays.asList(new WayGroup[0]));
 
-    JSONArray routes = input.getJSONObject("routes").getJSONArray("routes");
+    JSONArray routes = input.getJSONArray("routes");
 
     for (int i = 0; i < routes.length(); i++)
     {
