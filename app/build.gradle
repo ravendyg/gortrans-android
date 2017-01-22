@@ -30,5 +30,4 @@ dependencies {
     compile 'com.android.support:design:23.0.1'
     compile 'com.github.nkzawa:socket.io-client:0.3.0'
     compile 'org.osmdroid:osmdroid-android:5.5:release@aar'
-    compile 'com.google.android.gms:play-services-appindexing:8.4.0'
 }
