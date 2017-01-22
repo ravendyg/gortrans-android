@@ -10,23 +10,15 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
-import android.net.Uri;
 import android.preference.PreferenceManager;
-import android.support.design.widget.AppBarLayout;
-import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
-import android.view.Window;
-import android.view.WindowManager;
 import android.widget.FrameLayout;
 
-
-import java.io.InputStream;
-import java.io.InputStreamReader;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -37,17 +29,10 @@ import org.osmdroid.util.GeoPoint;
 import org.osmdroid.views.MapView;
 import org.osmdroid.views.Projection;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.net.HttpURLConnection;
-import java.net.SocketTimeoutException;
-import java.net.URL;
 import java.util.ArrayList;
 
 import info.nskgortrans.maps.DataClasses.WayGroup;
 import info.nskgortrans.maps.Services.BusPositionService;
-import info.nskgortrans.maps.Fragments.BusSearchFragment;
-import info.nskgortrans.maps.Fragments.EmptyFragment;
 
 public class MainActivity extends AppCompatActivity {
   private String LOG_TAG = "main activity";
@@ -101,19 +86,6 @@ public class MainActivity extends AppCompatActivity {
       notGrantedPermissions--;
     }
 
-
-//    menuHolder = (FrameLayout) findViewById(R.id.fragment_view);
-//
-//    if (savedInstanceState == null)
-//    { // start with empty fragment
-//      if (menuHolder != null)
-//      {
-//        EmptyFragment empty = new EmptyFragment();
-//        getSupportFragmentManager().beginTransaction().add(R.id.fragment_view, empty).commit();
-//      }
-//    }
-//    else
-//    {
     if (savedInstanceState != null)
     {
       routesDataStr = savedInstanceState.getString("savedWays");
@@ -138,18 +110,6 @@ public class MainActivity extends AppCompatActivity {
     } else {
       // do smth about permissions
     }
-//
-//    // add click listeners to the buttons
-//    busSearchBtn = (AppCompatImageButton) findViewById(R.id.bus_search_btn);
-//    busSearchBtn.setOnClickListener(
-//      new View.OnClickListener()
-//      {
-//        public void onClick(View v)
-//        {
-//          showBusSearch();
-//        }
-//      }
-//    );
   }
 
   private void loadWayGrous()
@@ -228,8 +188,17 @@ public class MainActivity extends AppCompatActivity {
 
   public void selectBus(final String code)
   {
-    searchBusDialog.cancel();
+    removeDialog();
     Log.e("bus code: ", code);
+  }
+
+  private void removeDialog()
+  {
+    if (searchBusDialog != null)
+    {
+      searchBusDialog.cancel();
+      searchBusDialog = null;
+    }
   }
 
   private void startListenForService()
@@ -249,11 +218,7 @@ public class MainActivity extends AppCompatActivity {
           }
 //          else if (eventType.equals("busSelected"))
 //          { // from search bus dialog
-//            if (searchBusDialog != null)
-//            {
-//              searchBusDialog.cancel();
-//              searchBusDialog = null;
-//            }
+//            removeDialog();
 //            String busCode = intent.getStringExtra("busCode");
 //            Log.e("bus code: ", busCode);
 //          }
@@ -332,14 +297,18 @@ public class MainActivity extends AppCompatActivity {
   protected void onDestroy() {
     super.onDestroy();
 
-//    if (socketReceiver != null) {
-//      unregisterReceiver(socketReceiver);
-//    }
-
     // notify bus position service
     Intent intent = new Intent("gortrans-bus-service");
     intent.putExtra("event", "activity-offline");
     sendBroadcast(intent);
+
+    if (serviceReceiver != null)
+    {
+      unregisterReceiver(serviceReceiver);
+      serviceReceiver = null;
+    }
+
+    removeDialog();
   }
 
 
@@ -364,125 +333,6 @@ public class MainActivity extends AppCompatActivity {
   public void onStop() {
     super.onStop();
   }
-/*
-  private class SyncData extends AsyncTask<URL, Void, String> {
-    final String TAG = "sync request";
-    private boolean loaded;
-
-    public SyncData(boolean _loaded) {
-      loaded = _loaded;
-    }
-
-    protected String doInBackground(URL... urls) {
-      HttpURLConnection connection = null;
-      BufferedReader reader = null;
-
-      long routesTimestamp = 0, trassesTimestamp = 0, stopsTimestamp = 0;
-
-      JSONObject result = new JSONObject(), newResult = new JSONObject();
-
-      String syncFileString = "", syncWebStr = "";
-      if (FileAPI.isFileExists(getBaseContext(), getString(R.string.routes_file))) {
-        try {
-          syncFileString = FileAPI.readFile(getBaseContext(), getString(R.string.routes_file));
-          result = new JSONObject(syncFileString);
-          routesTimestamp = JSONParser.getTimestamp(result, "routes");
-          trassesTimestamp = JSONParser.getTimestamp(result, "trasses");
-          stopsTimestamp = JSONParser.getTimestamp(result, "stopsData");
-        } catch (JSONException err) {
-          Log.e(TAG, "read file json error", err);
-        } catch (Exception err) {
-          Log.e(TAG, "read file general error", err);
-        }
-      }
-
-      try {
-        if (!loaded) {
-          URL syncUrl = new URL(
-                  getString(R.string.base_url) +
-                          "/sync?" +
-                          "routestimestamp=" + routesTimestamp +
-                          "&trassestimestamp=" + trassesTimestamp +
-                          "&stopstimestamp=" + stopsTimestamp
-          );
-
-          connection = (HttpURLConnection) syncUrl.openConnection();
-          connection.setRequestMethod("GET");
-          connection.setConnectTimeout(5000);
-          connection.setReadTimeout(5000);
-          connection.connect();
-
-          InputStream input = connection.getInputStream();
-          StringBuffer buffer = new StringBuffer();
-
-          if (input != null) {
-            reader = new BufferedReader(new InputStreamReader(input));
-
-            String line;
-            while ((line = reader.readLine()) != null) {
-              buffer.append(line + "\n");
-            }
-
-            syncWebStr = buffer.toString();
-          }
-        }
-      } catch (SocketTimeoutException e) {
-        Log.e(TAG, "error", e);
-      } catch (IOException e) {
-        Log.e(TAG, "error", e);
-      } finally {
-        if (connection != null) {
-          connection.disconnect();
-        }
-        if (reader != null) {
-          try {
-            reader.close();
-          } catch (final IOException e) {
-            Log.e(TAG, "closing stream", e);
-          }
-        }
-      }
-
-      try {
-        if (syncWebStr.length() > 0) {
-          if (syncFileString.length() == 0) {
-            syncFileString = syncWebStr;
-          }
-          newResult = new JSONObject(syncFileString);
-
-          System.out.println("I got a JSONObject: " + newResult);
-
-          long newRoutesTimestamp = JSONParser.getTimestamp(newResult, "routes");
-          long newTrassesTimestamp = JSONParser.getTimestamp(newResult, "trasses");
-          long newStopsTimestamp = JSONParser.getTimestamp(newResult, "stopsData");
-          if (newStopsTimestamp > stopsTimestamp ||
-                  newTrassesTimestamp > trassesTimestamp ||
-                  newRoutesTimestamp > routesTimestamp
-                  ) { // overwrite if any timestamp changed
-            FileAPI.writeFile(getBaseContext(), getString(R.string.routes_file), syncFileString);
-            result = newResult;
-            syncFileString = syncWebStr;
-          }
-        }
-
-        wayGroupsStr = syncFileString;
-        wayGroups = JSONParser.getWayGroups(result);
-
-        System.out.println(wayGroups);
-      } catch (JSONException err) {
-
-      }
-
-
-      return "";
-    }
-
-    protected void onPostExecute(String time) {
-      waysLoaded = true;
-      showBtns(false);
-    }
-  }
-*/
 
   private void connectToSocket() {
     Log.e(LOG_TAG, "connect");
@@ -509,36 +359,11 @@ public class MainActivity extends AppCompatActivity {
   }
 
   private void updateBusOnMap(String code) {
-
   }
 
   private void removeBusFromMap(String code) {
-
   }
 
-
-//  public void showBusSearch() {
-//    if (menuHolder != null) {
-//      BusSearchFragment menu = new BusSearchFragment();
-//      Bundle bundle = new Bundle();
-//      bundle.putSerializable("ways", wayGroups);
-//      menu.setArguments(bundle);
-//
-//      getSupportFragmentManager()
-//              .beginTransaction()
-//              .replace(R.id.fragment_view, menu)
-//              .addToBackStack(null)
-//              .commit();
-//    }
-//  }
-
-  public void hideBtns() {
-
-  }
-
-  public void showBtns(boolean fromEmpty) {
-
-  }
 
   // permissions handling
   @Override

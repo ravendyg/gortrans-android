@@ -55,7 +55,6 @@ public class BusSearchFragment extends Fragment
       new LinearLayout.LayoutParams( width, LinearLayout.LayoutParams.MATCH_PARENT )
     );
 
-    ((MainActivity) getActivity()).hideBtns();
 
     wayGroups = new Ways((ArrayList<WayGroup>) getArguments().getSerializable("ways"));
 
