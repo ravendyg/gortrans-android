@@ -45,7 +45,6 @@ public class MainActivity extends AppCompatActivity {
   private final int WRITE_STORAGE_PERMISSION_GRANTED = 12;
 
   private SharedPreferences pref;
-  private MapView map;
 
   private ArrayList<WayGroup> wayGroups;
   private String routesDataStr = "";
@@ -59,6 +58,8 @@ public class MainActivity extends AppCompatActivity {
   private boolean waysLoaded;
 
   private Dialog searchBusDialog = null;
+
+  private Map map;
 
 
 //  private SocketIO socket;
@@ -131,9 +132,8 @@ public class MainActivity extends AppCompatActivity {
 
     pref = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
 
-
-    initMap();
-
+    map = new Map();
+    map.init(context, findViewById(R.id.map), pref);
 
     startListenForService();
 
@@ -236,29 +236,6 @@ public class MainActivity extends AppCompatActivity {
     registerReceiver(serviceReceiver, new IntentFilter("gortrans-main-activity"));
   }
 
-  private void initMap() {
-    // set user agent for the map
-    OpenStreetMapTileProviderConstants.setUserAgentValue(BuildConfig.APPLICATION_ID);
-
-    /** init map */
-    map = (MapView) findViewById(R.id.map);
-    map.setTileSource(TileSourceFactory.MAPNIK);
-
-    map.setBuiltInZoomControls(true);
-    map.setMultiTouchControls(true);
-
-    float lat = pref.getFloat(getString(R.string.pref_lat), (float) 54.908593335436926);
-    float lng = pref.getFloat(getString(R.string.pref_lng), (float) 83.0291748046875);
-    int zoom = pref.getInt(getString(R.string.pref_zoom), 10);
-
-    IMapController mapController = map.getController();
-    mapController.setZoom(zoom);
-    GeoPoint startPoint = new GeoPoint(lat, lng);
-    mapController.setCenter(startPoint);
-  }
-
-
-
 
   @Override
   public void onResume() {
@@ -269,22 +246,7 @@ public class MainActivity extends AppCompatActivity {
   protected void onPause() {
     super.onPause();
 
-    try { // save current map position and zoom
-      Projection proj = map.getProjection();
-      GeoPoint center = proj.getBoundingBox().getCenter();
-
-      float lat = (float) center.getLatitude();
-      float lng = (float) center.getLongitude();
-      int zoom = proj.getZoomLevel();
-
-      SharedPreferences.Editor editor = pref.edit();
-      editor.putFloat(getString(R.string.pref_lat), lat);
-      editor.putFloat(getString(R.string.pref_lng), lng);
-      editor.putInt(getString(R.string.pref_zoom), zoom);
-      editor.commit();
-    } catch (Exception err) {
-      Log.e("save map position", "", err);
-    }
+    map.saveState();
   }
 
   @Override
