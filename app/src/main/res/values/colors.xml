@@ -6,4 +6,5 @@
     <color name="btnColor">#CFCFCF</color>
     <color name="rippleColor">#333333</color>
     <color name="tableHeader">#EEEEEE</color>
+    <color name="markerTitleBackground">#CFCFCF</color>
 </resources>

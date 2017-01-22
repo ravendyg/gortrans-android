@@ -13,6 +13,12 @@
         <item name="android:layout_width">0dp</item>
     </style>
 
+    <style name="markerTitle">
+        <item name="android:layout_marginBottom">8dp</item>
+        <item name="android:padding">8dp</item>
+        <item name="android:background">@drawable/marker_title_background</item>
+    </style>
+
 
     <!--<style name="MenuFragment">-->
         <!--<item name="android:layout_height">match_parent</item>-->

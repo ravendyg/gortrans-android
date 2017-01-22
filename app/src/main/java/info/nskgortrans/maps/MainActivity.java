@@ -10,7 +10,11 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.location.Location;
+import android.location.LocationListener;
+import android.location.LocationManager;
 import android.preference.PreferenceManager;
+import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
@@ -34,15 +38,21 @@ import java.util.ArrayList;
 import info.nskgortrans.maps.DataClasses.WayGroup;
 import info.nskgortrans.maps.Services.BusPositionService;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity
+{
   private String LOG_TAG = "main activity";
 
   final Context context = this;
 
-  private int notGrantedPermissions = 2;
   private final int COARSE_LOCATION_PERMISSION_GRANTED = 10;
   private final int FINE_LOCATION_PERMISSION_GRANTED = 11;
   private final int WRITE_STORAGE_PERMISSION_GRANTED = 12;
+
+  private final int MIN_POSITION_TRACKING_TIME = 0;//1000 * 60;
+  private final long MIN_POSITION_TRACKING_DISTANCE = 0;//10;
+
+  private boolean locationGranted = false;
+  private boolean storageGranted = false;
 
   private SharedPreferences pref;
 
@@ -51,8 +61,6 @@ public class MainActivity extends AppCompatActivity {
 
   private BroadcastReceiver serviceReceiver = null;
 
-  private FrameLayout menuHolder;
-
   private SearchBusDialog searchDialog;
 
   private boolean waysLoaded;
@@ -60,6 +68,9 @@ public class MainActivity extends AppCompatActivity {
   private Dialog searchBusDialog = null;
 
   private Map map;
+  private Location location;
+  private boolean trackingUser = false;
+  private boolean userFound = false;
 
 
 //  private SocketIO socket;
@@ -75,16 +86,21 @@ public class MainActivity extends AppCompatActivity {
             ) {
       ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
               FINE_LOCATION_PERMISSION_GRANTED);
-    } else {
-      notGrantedPermissions--;
+    }
+    else
+    {
+      locationGranted = true;
+      startTrackingUser();
     }
     if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) !=
             PackageManager.PERMISSION_GRANTED
             ) {
       ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
               WRITE_STORAGE_PERMISSION_GRANTED);
-    } else {
-      notGrantedPermissions--;
+    }
+    else
+    {
+      storageGranted = true;
     }
 
     if (savedInstanceState != null)
@@ -94,21 +110,13 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-//    }
-//
-    // if ok initialize map and start service
-    if (notGrantedPermissions == 0) {
+
+    if (storageGranted)
+    { // storage is critical for the map
       init();
-//      if (wayGroups == null)
-//      {
-//        new SyncData(false).execute();
-//      }
-//      else
-//      {
-//        waysLoaded = true;
-//        showBtns(false);
-//      }
-    } else {
+    }
+    else
+    {
       // do smth about permissions
     }
   }
@@ -179,6 +187,52 @@ public class MainActivity extends AppCompatActivity {
 //    registerReceiver(socketReceiver, new IntentFilter("gortrans-socket-activity"));
 
 
+  }
+
+  private void startTrackingUser()
+  {
+    if (trackingUser)
+    {
+      return;
+    }
+
+    trackingUser = true;
+    // Acquire a reference to the system Location Manager
+    LocationManager locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
+
+    // Define a listener that responds to location updates
+    LocationListener locationListener = new LocationListener() {
+      public void onLocationChanged(Location _location)
+      {
+        location = _location;
+        if (map != null)
+        {
+          map.moveUser(_location);
+        }
+        if (!userFound)
+        {
+          userFound = true;
+          ((FloatingActionButton) findViewById(R.id.user_location)).setVisibility(View.VISIBLE);
+        }
+      }
+
+      public void onStatusChanged(String provider, int status, Bundle extras) {}
+
+      public void onProviderEnabled(String provider) {}
+
+      public void onProviderDisabled(String provider) {}
+    };
+
+    // Register the listener with the Location Manager to receive location updates
+    if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) !=
+            PackageManager.PERMISSION_GRANTED
+            ) {
+      ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+              FINE_LOCATION_PERMISSION_GRANTED);
+    }
+    locationManager.requestLocationUpdates(
+            LocationManager.NETWORK_PROVIDER, MIN_POSITION_TRACKING_TIME,
+            MIN_POSITION_TRACKING_DISTANCE, locationListener);
   }
 
   public void showSearchBusDialog(View bntView)
@@ -273,6 +327,14 @@ public class MainActivity extends AppCompatActivity {
     removeDialog();
   }
 
+  public void zoomToUser(View bntView)
+  {
+    if (userFound)
+    {
+      map.zoomToUser(location);
+    }
+  }
+
 
   private boolean isServiceRunning(Class<?> serviceClass)
   {
@@ -329,33 +391,29 @@ public class MainActivity extends AppCompatActivity {
 
   // permissions handling
   @Override
-  public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
+  public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults)
+  {
     switch (requestCode) {
       case COARSE_LOCATION_PERMISSION_GRANTED:
       case FINE_LOCATION_PERMISSION_GRANTED:
-      case WRITE_STORAGE_PERMISSION_GRANTED: {
-        // If request is cancelled, the result arrays are empty.
-        if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-          notGrantedPermissions--;
-        }
+      {
+        locationGranted = true;
+        startTrackingUser();
+        break;
+      }
+      case WRITE_STORAGE_PERMISSION_GRANTED:
+      {
+        storageGranted = true;
+        break;
       }
 
       // other 'case' lines to check for other
       // permissions this app might request
     }
 
-    if (notGrantedPermissions == 0) {
-//      if (wayGroups == null)
-//      {
-//        new SyncData(false).execute();
-//        init();
-//      }
-//      else
-//      {
-//        waysLoaded = true;
-//        showBtns(false);
-//      }
-      recreate();
+    if (locationGranted)
+    {
+      init();
     }
 
     return;

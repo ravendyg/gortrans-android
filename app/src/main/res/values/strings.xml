@@ -23,4 +23,6 @@
     <string name="stops_timestamp">stops_timestamp</string>
 
     <string name="search_hint">Номер маршрута</string>
+
+    <string name="user_marker">Вы здесь</string>
 </resources>

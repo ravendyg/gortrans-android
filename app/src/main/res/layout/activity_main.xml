@@ -48,6 +48,8 @@
                     android:layout_margin="@dimen/activity_horizontal_margin"
                     map:rippleColor="@color/rippleColor"
                     map:backgroundTint="@color/btnColor"
+                    android:visibility="invisible"
+                    android:onClick="zoomToUser"
                 />
             </LinearLayout>
         </LinearLayout>
