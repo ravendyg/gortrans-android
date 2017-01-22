@@ -7,4 +7,12 @@
     <color name="rippleColor">#333333</color>
     <color name="tableHeader">#EEEEEE</color>
     <color name="markerTitleBackground">#CFCFCF</color>
+
+
+    <color name="busColor1">#D50000</color>
+    <color name="busColor2">#0000FF</color>
+    <color name="busColor3">#FF9800</color>
+    <color name="busColor4">#FFFF00</color>
+    <color name="busColor5">#444444</color>
+    <color name="busBg">#AAB0BEC5</color>
 </resources>

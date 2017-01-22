@@ -105,7 +105,6 @@ public class BusPositionService extends Service
 //    }
 //    registerReceiver(socketReceiver, new IntentFilter("gortrans-socket-service"));
 
-    // hardcoded behaviour: register receiver that will listen for bus 36
     if (mainReceiver == null)
     {
       mainReceiver = new BroadcastReceiver()

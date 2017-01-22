@@ -22,6 +22,7 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.FrameLayout;
+import android.widget.ListView;
 
 
 import org.json.JSONException;
@@ -34,7 +35,12 @@ import org.osmdroid.views.MapView;
 import org.osmdroid.views.Projection;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.StringTokenizer;
 
+import info.nskgortrans.maps.Adapters.BusListAdapter;
+import info.nskgortrans.maps.DataClasses.BusListElement;
 import info.nskgortrans.maps.DataClasses.WayGroup;
 import info.nskgortrans.maps.Services.BusPositionService;
 
@@ -42,7 +48,7 @@ public class MainActivity extends AppCompatActivity
 {
   private String LOG_TAG = "main activity";
 
-  final Context context = this;
+  Context context;
 
   private final int COARSE_LOCATION_PERMISSION_GRANTED = 10;
   private final int FINE_LOCATION_PERMISSION_GRANTED = 11;
@@ -72,6 +78,10 @@ public class MainActivity extends AppCompatActivity
   private boolean trackingUser = false;
   private boolean userFound = false;
 
+  private ArrayList<Integer> availableColors;
+  private ArrayList<BusListElement> displayedBuses;
+  private BusListAdapter displayedBusesAdapter;
+
 
 //  private SocketIO socket;
 
@@ -79,6 +89,18 @@ public class MainActivity extends AppCompatActivity
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
     setContentView(R.layout.activity_main);
+
+    context = this;
+
+    // create colors array
+    Integer[] colors = {R.color.busColor1, R.color.busColor2, R.color.busColor3, R.color.busColor4, R.color.busColor5};
+    availableColors = new ArrayList<>(Arrays.asList(colors));
+    // handle list of selected buses
+    displayedBuses = new ArrayList<>(Arrays.asList(new BusListElement[0]));
+    displayedBusesAdapter = new BusListAdapter(context, displayedBuses);
+    ListView displayedBusesList = (ListView) findViewById(R.id.bus_list);
+    displayedBusesList.setAdapter(displayedBusesAdapter);
+
 
     // make sure all permissions granted
     if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) !=
@@ -240,10 +262,63 @@ public class MainActivity extends AppCompatActivity
     searchBusDialog = searchDialog.showDialog(context, wayGroups);
   }
 
-  public void selectBus(final String code)
+  public void selectBus(final String code, final String name, final int type)
   {
     removeDialog();
     Log.e("bus code: ", code);
+
+    // check for dupes
+    for (int i = 0; i < displayedBuses.size(); i++)
+    {
+      if (displayedBuses.get(i).code.equals(code))
+      {
+        return;
+      }
+    }
+
+    int newColor, icon;
+    int size = availableColors.size();
+    if (size > 0)
+    {
+      newColor = availableColors.get(size - 1);
+      availableColors.remove(size - 1);
+    }
+    else
+    { // remove the oldest one
+      removeBus(displayedBuses.get(0).code);
+      // and use it's color
+      newColor = availableColors.get(0);
+    }
+
+    // select icon
+    switch (type)
+    {
+      case 1:
+        icon = R.drawable.bus;
+      break;
+
+      case 2:
+        icon = R.drawable.trolley;
+      break;
+
+      case 3:
+        icon = R.drawable.tram;
+      break;
+
+      default:
+        icon = R.drawable.minibus;
+    }
+
+    addBusToMap(code, name, newColor, icon);
+    // implement add to map and subscribe
+    displayedBusesAdapter.notifyDataSetChanged();
+  }
+
+  private void removeBus(final String code)
+  {
+    removeBusFromMap(code);
+    // implement removal from the map and unsubscribing
+    displayedBusesAdapter.notifyDataSetChanged();
   }
 
   private void removeDialog()
@@ -378,14 +453,30 @@ public class MainActivity extends AppCompatActivity
     sendBroadcast(intent);
   }
 
-  private void addBusToMap(String code) {
+  private void addBusToMap(String code, String name, int color, int icon) {
     Log.e(LOG_TAG, code);
+    displayedBuses.add(new BusListElement(name, code, color, icon));
   }
 
-  private void updateBusOnMap(String code) {
+  private void updateBusOnMap(String code)
+  {
   }
 
-  private void removeBusFromMap(String code) {
+  private boolean removeBusFromMap(String code)
+  {
+    boolean removed = false;
+    for (int i = 0; i < displayedBuses.size(); i++)
+    {
+      BusListElement temp = displayedBuses.get(i);
+      if (temp.code.equals(code))
+      {
+        availableColors.add(temp.color);
+        displayedBuses.remove(i);
+        removed = true;
+        break;
+      }
+    }
+    return removed;
   }
 
 

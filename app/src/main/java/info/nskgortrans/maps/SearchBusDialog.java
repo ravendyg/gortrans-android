@@ -13,6 +13,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowManager;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.EditText;
@@ -93,8 +94,8 @@ public class SearchBusDialog
                 @Override
                 public void onClick(View btn)
                 {
-                    searchInput.setText("");
-                    btn.setVisibility(View.GONE);
+                searchInput.setText("");
+                btn.setVisibility(View.GONE);
                 }
             }
         );
@@ -113,7 +114,9 @@ public class SearchBusDialog
                     }
                     else
                     {
-                        ((MainActivity) context).selectBus(elem.code);
+                        InputMethodManager imm = (InputMethodManager) context.getSystemService(Context.INPUT_METHOD_SERVICE);
+                        imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
+                        ((MainActivity) context).selectBus(elem.code, elem.name, elem.type);
                     }
                 }
             }
