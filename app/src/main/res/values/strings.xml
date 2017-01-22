@@ -25,4 +25,7 @@
     <string name="search_hint">Номер маршрута</string>
 
     <string name="user_marker">Вы здесь</string>
+
+    <string name="zoom_to_route">Показать</string>
+    <string name="remove_bus">Удалить</string>
 </resources>

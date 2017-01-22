@@ -8,6 +8,10 @@ import android.Manifest;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
+import android.graphics.drawable.ScaleDrawable;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
@@ -72,7 +76,7 @@ public class Map
       @Override
       public boolean onScroll(ScrollEvent scrollEvent)
       {
-//        hideUserInfo();
+        hideUserInfo();
         return false;
       }
 
@@ -111,7 +115,10 @@ public class Map
     {
       userMarker = new Marker(map);
       userMarker.setPosition(new GeoPoint(location));
-      userMarker.setIcon(ctx.getResources().getDrawable(R.drawable.pin_s));
+      Drawable image = ContextCompat.getDrawable(ctx, R.drawable.pin);
+      Bitmap bitmap = ((BitmapDrawable) image).getBitmap();
+      image = new BitmapDrawable(ctx.getResources(), Bitmap.createScaledBitmap(bitmap, 50, 80, true));
+      userMarker.setIcon(image);
       userMarker.setAnchor(Marker.ANCHOR_CENTER, 1.0f);
       userInfoWindow = new UserInfoWindow(R.layout.bubble, map);
       userMarker.setInfoWindow(userInfoWindow);
@@ -127,7 +134,7 @@ public class Map
           }
           else
           {
-            userInfoWindow.open(userMarker, new GeoPoint(location), 0, -88);
+            userInfoWindow.open(userMarker, new GeoPoint(location), 0, -70);
           }
           return true;
         }

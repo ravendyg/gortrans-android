@@ -21,6 +21,8 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.view.inputmethod.InputMethodManager;
+import android.widget.AdapterView;
 import android.widget.FrameLayout;
 import android.widget.ListView;
 
@@ -42,6 +44,7 @@ import java.util.StringTokenizer;
 import info.nskgortrans.maps.Adapters.BusListAdapter;
 import info.nskgortrans.maps.DataClasses.BusListElement;
 import info.nskgortrans.maps.DataClasses.WayGroup;
+import info.nskgortrans.maps.DataClasses.WayGroupElement;
 import info.nskgortrans.maps.Services.BusPositionService;
 
 public class MainActivity extends AppCompatActivity
@@ -100,6 +103,18 @@ public class MainActivity extends AppCompatActivity
     displayedBusesAdapter = new BusListAdapter(context, displayedBuses);
     ListView displayedBusesList = (ListView) findViewById(R.id.bus_list);
     displayedBusesList.setAdapter(displayedBusesAdapter);
+
+    displayedBusesList.setOnItemClickListener(
+      new AdapterView.OnItemClickListener()
+      {
+        @Override
+        public void onItemClick( AdapterView<?> adapterView, View view, int position, long id)
+        {
+          BusListElement elem = displayedBusesAdapter.getElem(position);
+          BusActionDialog.showDialog(context, elem.code, elem.type, elem.name);
+        }
+      }
+    );
 
 
     // make sure all permissions granted
@@ -169,12 +184,10 @@ public class MainActivity extends AppCompatActivity
 
     if (!isServiceRunning(BusPositionService.class))
     {
-      Log.e(LOG_TAG, "service not running");
       startService(new Intent(this, BusPositionService.class));
     }
     else
     {
-      Log.e(LOG_TAG, "service running");
       // notify bus position service
       Intent intent = new Intent("gortrans-bus-service");
       intent.putExtra("event", "activity-online");
@@ -262,7 +275,7 @@ public class MainActivity extends AppCompatActivity
     searchBusDialog = searchDialog.showDialog(context, wayGroups);
   }
 
-  public void selectBus(final String code, final String name, final int type)
+  public void selectBus(final String code, final String name, final int type, boolean zoom)
   {
     removeDialog();
     Log.e("bus code: ", code);
@@ -309,16 +322,24 @@ public class MainActivity extends AppCompatActivity
         icon = R.drawable.minibus;
     }
 
-    addBusToMap(code, name, newColor, icon);
-    // implement add to map and subscribe
+    addBusToMap(code, name, newColor, icon, type);
+
+    addBusListener(code);
+
+    if (zoom)
+    {
+      zoomToRoute(code);
+    }
+
     displayedBusesAdapter.notifyDataSetChanged();
   }
 
-  private void removeBus(final String code)
+  public void removeBus(final String code)
   {
     removeBusFromMap(code);
-    // implement removal from the map and unsubscribing
+    removeRoute(code);
     displayedBusesAdapter.notifyDataSetChanged();
+    removeBusListener(code);
   }
 
   private void removeDialog()
@@ -329,6 +350,34 @@ public class MainActivity extends AppCompatActivity
       searchBusDialog = null;
     }
   }
+
+  public void zoomToRoute(final String code)
+  {
+
+  }
+
+  private void addBusListener(final String code)
+  {
+    Intent intent = new Intent("gortrans-bus-service");
+    intent.putExtra("event", "add-bus-listener");
+    intent.putExtra("code", code);
+    sendBroadcast(intent);
+  }
+
+  private void removeBusListener(final String code)
+  {
+    Intent intent = new Intent("gortrans-bus-service");
+    intent.putExtra("event", "remove-bus-listener");
+    intent.putExtra("code", code);
+    sendBroadcast(intent);
+  }
+
+
+  private void updateState(final String newStateStr)
+  {
+
+  }
+
 
   private void startListenForService()
   {
@@ -345,24 +394,37 @@ public class MainActivity extends AppCompatActivity
             routesDataStr = intent.getStringExtra("way-groups");
             loadWayGrous();
           }
-//          else if (eventType.equals("busSelected"))
-//          { // from search bus dialog
-//            removeDialog();
-//            String busCode = intent.getStringExtra("busCode");
-//            Log.e("bus code: ", busCode);
-//          }
-//          if (eventType.equals("connection"))
-//          {
-//            requestBusOnMap("1-036-W-36");
-//          }
-//          else if (eventType.equals("bus listener created") )
-//          {
-//            addBusToMap("1-036-W-36");
-//          }
+          else if (eventType.equals("stops"))
+          {
+            refreshStopMarkers(intent.getStringExtra("data"));
+          }
+          else if (eventType.equals("route"))
+          {
+            drawRoute(intent.getStringExtra("code"), intent.getStringExtra("data"));
+          }
+          else if (eventType.equals("state-update"))
+          {
+            updateState(intent.getStringExtra("new-state"));
+          }
         }
       };
     }
     registerReceiver(serviceReceiver, new IntentFilter("gortrans-main-activity"));
+  }
+
+  private void refreshStopMarkers(final String stopsStr)
+  {
+
+  }
+
+  private void drawRoute(final String code, final String routeStr)
+  {
+
+  }
+
+  private void removeRoute(final String code)
+  {
+
   }
 
 
@@ -453,9 +515,9 @@ public class MainActivity extends AppCompatActivity
     sendBroadcast(intent);
   }
 
-  private void addBusToMap(String code, String name, int color, int icon) {
+  private void addBusToMap(String code, String name, int color, int icon, int type) {
     Log.e(LOG_TAG, code);
-    displayedBuses.add(new BusListElement(name, code, color, icon));
+    displayedBuses.add(new BusListElement(name, code, color, icon, type));
   }
 
   private void updateBusOnMap(String code)

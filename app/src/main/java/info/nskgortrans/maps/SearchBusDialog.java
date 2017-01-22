@@ -18,7 +18,7 @@ import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ListView;
-import android.widget.RelativeLayout;
+import android.os.Handler;
 
 import java.util.ArrayList;
 
@@ -106,7 +106,7 @@ public class SearchBusDialog
                 @Override
                 public void onItemClick( AdapterView<?> adapterView, View view, int position, long id)
                 {
-                    WayGroupElement elem = adapter.getElem(position);
+                    final WayGroupElement elem = adapter.getElem(position);
                     if (elem.children != 0)
                     {
                         wayGroups.toggle(elem.children);
@@ -116,7 +116,19 @@ public class SearchBusDialog
                     {
                         InputMethodManager imm = (InputMethodManager) context.getSystemService(Context.INPUT_METHOD_SERVICE);
                         imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
-                        ((MainActivity) context).selectBus(elem.code, elem.name, elem.type);
+
+                        // give time to hide keyboard
+                        new Handler().postDelayed(
+                            new Runnable()
+                            {
+                                @Override
+                                public void run()
+                                {
+                                    ((MainActivity) context).selectBus(elem.code, elem.name, elem.type, true);
+                                }
+                            },
+                            100
+                        );
                     }
                 }
             }

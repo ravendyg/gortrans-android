@@ -10,12 +10,14 @@ public class BusListElement
   public String code;
   public int color;
   public int icon;
+  public int type;
 
-  public BusListElement(final String _name, final String _code, final int _color, final int _icon)
+  public BusListElement(final String _name, final String _code, final int _color, final int _icon, final int _type)
   {
     name = _name;
     code = _code;
     color = _color;
     icon = _icon;
+    type = _type;
   }
 }
