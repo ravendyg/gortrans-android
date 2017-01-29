@@ -38,6 +38,7 @@
                     android:layout_margin="@dimen/activity_horizontal_margin"
                     map:rippleColor="@color/rippleColor"
                     map:backgroundTint="@color/btnColor"
+                    android:visibility="invisible"
                     android:onClick="showSearchBusDialog"
                 />
                 <android.support.design.widget.FloatingActionButton

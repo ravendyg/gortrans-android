@@ -8,7 +8,12 @@ import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Set;
 
+import info.nskgortrans.maps.DataClasses.StopInfo;
 import info.nskgortrans.maps.DataClasses.Way;
 import info.nskgortrans.maps.DataClasses.WayGroup;
 
@@ -63,5 +68,69 @@ public class JSONParser
     }
 
     return wayGroups;
+  }
+
+  public static HashMap<String, StopInfo> extractStops(JSONObject input)
+  {
+    HashMap<String, StopInfo> out = new HashMap<String, StopInfo>();
+    Iterator<String> stopIds = input.keys();
+    while (stopIds.hasNext())
+    {
+      try
+      {
+        String _id = stopIds.next();
+        JSONObject temp = input.getJSONObject(_id);
+
+        StopInfo stopInfo = new StopInfo(_id, Double.parseDouble(temp.getString("lat")), Double.parseDouble(temp.getString("lng")));
+        if (temp.has("n"))
+        {
+          stopInfo.setName(temp.getString("n"));
+        }
+        if (temp.has("vehicles"))
+        {
+          Iterator<String> vehicles = temp.getJSONObject("vehicles").keys();
+          while (vehicles.hasNext())
+          {
+            stopInfo.setBus(vehicles.next());
+          }
+        }
+
+        out.put(_id, stopInfo);
+      }
+      catch (JSONException err)
+      {
+        Log.e("JSON parser", "error", err);
+      }
+    }
+
+    return out;
+  }
+
+  public static HashMap<String, HashSet<String>> extractBusStops(JSONObject input)
+  {
+    HashMap<String, HashSet<String>> out = new HashMap<String, HashSet<String>>();
+    Iterator<String> vehicles = input.keys();
+    while (vehicles.hasNext())
+    {
+      try
+      {
+        String _id = vehicles.next();
+        JSONObject stopsHolder = input.getJSONObject(_id);
+        HashSet<String> stop = new HashSet<String>();
+        Iterator<String> stops = stopsHolder.keys();
+        while (stops.hasNext())
+        {
+          String stopsCode = stops.next();
+          stop.add(stopsCode);
+        }
+        out.put(_id, stop);
+      }
+      catch (JSONException err)
+      {
+        Log.e("JSON parser", "error", err);
+      }
+    }
+
+    return out;
   }
 }

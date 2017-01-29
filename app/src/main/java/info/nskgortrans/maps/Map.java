@@ -4,24 +4,15 @@ package info.nskgortrans.maps;
  * Created by me on 22/01/17.
  */
 
-import android.Manifest;
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
-import android.graphics.drawable.ScaleDrawable;
 import android.location.Location;
-import android.location.LocationListener;
-import android.location.LocationManager;
-import android.os.Bundle;
-import android.preference.PreferenceManager;
-import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.util.Log;
 import android.view.View;
-import android.widget.LinearLayout;
 
 import org.osmdroid.api.IMapController;
 import org.osmdroid.events.MapListener;
@@ -33,8 +24,13 @@ import org.osmdroid.util.GeoPoint;
 import org.osmdroid.views.MapView;
 import org.osmdroid.views.Projection;
 import org.osmdroid.views.overlay.Marker;
-import org.osmdroid.views.overlay.OverlayItem;
 import org.osmdroid.views.overlay.infowindow.InfoWindow;
+
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+
+import info.nskgortrans.maps.DataClasses.StopInfo;
 
 public class Map
 {
@@ -48,6 +44,11 @@ public class Map
 
   private Marker userMarker;
   private InfoWindow userInfoWindow;
+
+  private HashMap<String, StopInfo> stops;
+  private HashMap<String, HashSet<String>> busStops;
+  private HashMap<String, HashSet<String>> stopBuses = new HashMap<>();
+  private HashMap<String, Marker> stopMarkersOnMap = new HashMap<>();
 
   public void init(Context context, View view, SharedPreferences _pref)
   {
@@ -88,6 +89,14 @@ public class Map
       }
     });
   }
+
+  public void loadStops(final HashMap<String, StopInfo> _stops, final HashMap<String, HashSet<String>> _busStops)
+  {
+    stops = _stops;
+    busStops = _busStops;
+  }
+
+
 
   public void saveState()
   {
@@ -155,6 +164,89 @@ public class Map
     GeoPoint userPoint = new GeoPoint(location);
     mapController.setCenter(userPoint);
   }
+
+  public void addBusStops(final String code)
+  {
+    Iterator<String> stopIds = busStops.get(code).iterator();
+    while (stopIds.hasNext())
+    {
+      String id = stopIds.next();
+      HashSet<String> thisStopRoutes = stopBuses.get(id);
+      if (thisStopRoutes == null)
+      { // create record and a marker
+        thisStopRoutes = new HashSet<String>();
+        stopMarkersOnMap.put(id, null);
+      }
+      thisStopRoutes.add(code);
+      stopBuses.put(id, thisStopRoutes);
+    }
+  }
+
+  public void removeBusStops(final String code)
+  {
+    Iterator<String> stopIds = busStops.get(code).iterator();
+    while (stopIds.hasNext())
+    {
+      String id = stopIds.next();
+      HashSet<String> thisStopRoutes = stopBuses.get(id);
+      if (thisStopRoutes == null)
+      {
+        thisStopRoutes = new HashSet<String>();
+      }
+      thisStopRoutes.remove(code);
+      if (thisStopRoutes.size() == 0)
+      { // remove marker and HashSet from stopBuses
+        Marker stopMarkerToRemove = stopMarkersOnMap.get(id);
+        if (stopMarkerToRemove != null)
+        {
+          stopMarkerToRemove.remove(map);
+          stopMarkersOnMap.remove(id);
+        }
+        if (stopBuses.containsKey(id))
+        {
+          stopBuses.remove(id);
+        }
+      }
+      else
+      { // replace
+        stopBuses.put(id, thisStopRoutes);
+      }
+    }
+  }
+
+//    Iterator<String> stopMarkersOnMapIds = stopMarkersOnMap.keySet().iterator();
+//    // remove those missing in the new HashMap
+//    while (stopMarkersOnMapIds.hasNext())
+//    {
+//      String stopId = stopMarkersOnMapIds.next();
+//      if (!busStops.containsKey(stopId))
+//      {
+//        Marker markerToRemove =  stopMarkersOnMap.get(stopId);
+//        if (markerToRemove != null)
+//        {
+//          markerToRemove.remove(map);
+//        }
+//        stopMarkersOnMap.remove(stopId);
+//      }
+//    }
+//    // add new stops
+//    stopMarkersOnMapIds = stopMarkersOnMap.keySet().iterator();
+//    while (stopMarkersOnMapIds.hasNext())
+//    {
+//      String stopId = stopMarkersOnMapIds.next();
+//      if (!busStops.containsKey(stopId))
+//      {
+//        Marker markerToRemove =  stopMarkersOnMap.get(stopId);
+//        if (markerToRemove != null)
+//        {
+//          markerToRemove.remove(map);
+//        }
+//        stopMarkersOnMap.remove(stopId);
+//      }
+//      // add new stops
+//
+//    }
+//  }
 
   private void hideUserInfo()
   {

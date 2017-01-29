@@ -7,10 +7,9 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.os.Binder;
-import android.os.Debug;
 import android.os.IBinder;
-import android.os.Looper;
 import android.preference.PreferenceManager;
+import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
 import com.github.nkzawa.emitter.Emitter;
@@ -30,10 +29,12 @@ import java.net.URISyntaxException;
 import android.os.Handler;
 
 import java.net.URL;
-import java.security.Timestamp;
 import java.util.ArrayList;
-import java.util.logging.LogRecord;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
 
+import info.nskgortrans.maps.DataClasses.StopInfo;
 import info.nskgortrans.maps.DataClasses.WayGroup;
 import info.nskgortrans.maps.FileAPI;
 import info.nskgortrans.maps.JSONParser;
@@ -65,10 +66,18 @@ public class BusPositionService extends Service
   private ArrayList<WayGroup> wayGroups;
   private String routesDataStr = "";
 
+  private ArrayList<String> slectedBuses;
+
+  private HashMap<String, StopInfo> stops;
+  private HashMap<String, HashSet<String>> busStops;
+
 
   public void onCreate()
   {
     super.onCreate();
+
+    String [] _buses = {};
+    slectedBuses = new ArrayList<>(Arrays.asList(_buses));
 
     countDownHandler = new Handler();
 
@@ -103,7 +112,7 @@ public class BusPositionService extends Service
 //        }
 //      };
 //    }
-//    registerReceiver(socketReceiver, new IntentFilter("gortrans-socket-service"));
+//    registerReceiver(socketReceiver, new IntentFilter("info.nskgortrans.maps.gortrans.socket-service"));
 
     if (mainReceiver == null)
     {
@@ -130,13 +139,13 @@ public class BusPositionService extends Service
             // if activity connected to already running service, provide it with data
             if (dataLoaded)
             {
-              sendWayGroupsToMain();
+              sendDataToMain();
             }
           }
         }
       };
     }
-    registerReceiver(mainReceiver, new IntentFilter("gortrans-bus-service"));
+    registerReceiver(mainReceiver, new IntentFilter("info.nskgortrans.maps.gortrans.bus-service"));
 
 //    connectToSocket();
   }
@@ -339,20 +348,28 @@ public class BusPositionService extends Service
       wayGroups = JSONParser.getWayGroups(routesData);
       routesDataStr = routesData.toString();
       dataLoaded = true;
-      sendWayGroupsToMain();
+
+      stops = JSONParser.extractStops(stopsData.getJSONObject("stops"));
+      busStops = JSONParser.extractBusStops(stopsData.getJSONObject("busStops"));
+
+      sendDataToMain();
     }
     catch (JSONException err)
     {
+      stops = new HashMap<String, StopInfo>();
       Log.e(LOG_TAG, "after load", err);
     }
   }
 
-  private void sendWayGroupsToMain()
+  private void sendDataToMain()
   {
-    Intent intent = new Intent("gortrans-main-activity");
-    intent.putExtra("event", "wayGroups");
+    Intent intent = new Intent("info.nskgortrans.maps.main.activity");
+    intent.putExtra("event", "data");
     intent.putExtra("way-groups", routesDataStr);
-    sendBroadcast(intent);
+    intent.putExtra("stops", stops);
+    intent.putExtra("busStops", busStops);
+    LocalBroadcastManager.getInstance(this).
+      sendBroadcast(intent);
   }
 
   private void connectToSocket()
@@ -386,7 +403,7 @@ public class BusPositionService extends Service
     @Override
     public void call(final Object... args)
     {
-      Intent intent = new Intent("gortrans-socket-activity");
+      Intent intent = new Intent("info.nskgortrans.maps.gortrans.socket.activity");
       intent.putExtra("event", "connection");
       sendBroadcast(intent);
     }
@@ -399,7 +416,7 @@ public class BusPositionService extends Service
     {
       JSONObject data = (JSONObject) args[0];
 
-      Intent intent = new Intent("gortrans-socket-activity");
+      Intent intent = new Intent("info.nskgortrans.maps.gortrans.socket.activity");
       intent.putExtra("event", "bus listener created");
       sendBroadcast(intent);
     }
