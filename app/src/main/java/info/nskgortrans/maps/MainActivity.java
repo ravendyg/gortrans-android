@@ -196,33 +196,6 @@ public class MainActivity extends AppCompatActivity
     }
 
     searchDialog = new SearchBusDialog();
-
-
-    /** /init map */
-
-//    // hardcoded behaviour: register receiver that will listen for bus 36
-//    if (socketReceiver == null)
-//    {
-//      socketReceiver = new BroadcastReceiver()
-//      {
-//        @Override
-//        public void onReceive(Context context, Intent intent)
-//        {
-//          String eventType = intent.getStringExtra("event");
-//          if ( eventType.equals("connection") )
-//          {
-//            requestBusOnMap("1-036-W-36");
-//          }
-//          else if (eventType.equals("bus listener created") )
-//          {
-//            addBusToMap("1-036-W-36");
-//          }
-//        }
-//      };
-//    }
-//    registerReceiver(socketReceiver, new IntentFilter("gortrans-socket.activity"));
-
-
   }
 
   private void startTrackingUser()

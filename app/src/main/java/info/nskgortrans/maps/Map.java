@@ -20,6 +20,7 @@ import org.osmdroid.events.ScrollEvent;
 import org.osmdroid.events.ZoomEvent;
 import org.osmdroid.tileprovider.constants.OpenStreetMapTileProviderConstants;
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory;
+import org.osmdroid.util.BoundingBox;
 import org.osmdroid.util.GeoPoint;
 import org.osmdroid.views.MapView;
 import org.osmdroid.views.Projection;
@@ -33,6 +34,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 
 import info.nskgortrans.maps.DataClasses.BusRoute;
 import info.nskgortrans.maps.DataClasses.StopInfo;
@@ -63,6 +65,7 @@ public class Map
   // stop markers on the map with corresponding routes counter
   private HashMap<String, StopMarker> stopsOnMap = new HashMap<>();
   // route polylines
+  private HashMap<String, ArrayList<GeoPoint>> busRoutePoints = new HashMap<>();
   private HashMap<String, Polyline> busRoutesOnMap = new HashMap<>();
   private HashSet<String> routeDisplayed = new HashSet<>();
 
@@ -95,7 +98,6 @@ public class Map
     mapController.setZoom(zoom);
     GeoPoint startPoint = new GeoPoint(lat, lng);
     mapController.setCenter(startPoint);
-
 
     map.setMapListener(new MapListener()
     {
@@ -172,7 +174,8 @@ public class Map
 
   public void zoomToRoute(final String code)
   {
-
+    nextToZoomOn = code;
+    tryToZoom();
   }
 
 
@@ -240,6 +243,7 @@ public class Map
 
     poly.setPoints(points);
     busRoutesOnMap.put(busCode, poly);
+    busRoutePoints.put(busCode, points);
 
     if (!routeDisplayed.contains(busCode) && color != null)
     {
@@ -249,6 +253,8 @@ public class Map
       resetStopAndBusMarkers();
       map.invalidate();
     }
+
+    tryToZoom();
   }
 
   private void addBusStops(final String code)
@@ -288,7 +294,37 @@ public class Map
   {
     if (nextToZoomOn != null)
     {
-      // zoom
+      Polyline poly = busRoutesOnMap.get(nextToZoomOn);
+      if (poly == null)
+      {
+        return;
+      }
+      double north = -1000, south = 1000, east = -1000, west = 1000;
+      Iterator points = poly.getPoints().iterator();
+      while (points.hasNext())
+      {
+        GeoPoint point = (GeoPoint) points.next();
+        double lat = point.getLatitude();
+        if (north < lat)
+        {
+          north = lat;
+        }
+        if (south > lat)
+        {
+          south = lat;
+        }
+        double lng = point.getLongitude();
+        if (east < lng)
+        {
+          east = lng;
+        }
+        if (west > lng)
+        {
+          west = lng;
+        }
+      }
+      BoundingBox box = new BoundingBox(north, east, south, west);
+      map.zoomToBoundingBox(box, true);
       nextToZoomOn = null;
     }
   }
