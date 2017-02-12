@@ -30,7 +30,9 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 
+import info.nskgortrans.maps.DataClasses.BusRoute;
 import info.nskgortrans.maps.DataClasses.StopInfo;
+import info.nskgortrans.maps.DataClasses.StopMarker;
 
 public class Map
 {
@@ -45,10 +47,16 @@ public class Map
   private Marker userMarker;
   private InfoWindow userInfoWindow;
 
+  private Drawable stopImage;
+  private Drawable userImage;
+
+  // data
   private HashMap<String, StopInfo> stops;
   private HashMap<String, HashSet<String>> busStops;
-  private HashMap<String, HashSet<String>> stopBuses = new HashMap<>();
-  private HashMap<String, Marker> stopMarkersOnMap = new HashMap<>();
+  private HashMap<String, BusRoute> busRoutes;
+  // stop markers on the map with corresponding routes counter
+  private HashMap<String, StopMarker> stopsOnMap = new HashMap<>();
+  private HashMap<String, BusRoute> busRoutesOnMap = new HashMap<>(); // replace BusRoute with Polyline?
 
   public void init(Context context, View view, SharedPreferences _pref)
   {
@@ -62,6 +70,13 @@ public class Map
 
     map.setBuiltInZoomControls(true);
     map.setMultiTouchControls(true);
+
+    stopImage = ContextCompat.getDrawable(ctx, R.drawable.bus_stop2);
+    Bitmap stopBitmap = ((BitmapDrawable) stopImage).getBitmap();
+    stopImage = new BitmapDrawable(ctx.getResources(), Bitmap.createScaledBitmap(stopBitmap, 50, 50, true));
+    userImage = ContextCompat.getDrawable(ctx, R.drawable.pin);
+    Bitmap userBitmap = ((BitmapDrawable) userImage).getBitmap();
+    userImage = new BitmapDrawable(ctx.getResources(), Bitmap.createScaledBitmap(userBitmap, 50, 80, true));
 
     float lat = pref.getFloat(ctx.getString(R.string.pref_lat), (float) 54.908593335436926);
     float lng = pref.getFloat(ctx.getString(R.string.pref_lng), (float) 83.0291748046875);
@@ -90,10 +105,10 @@ public class Map
     });
   }
 
-  public void loadStops(final HashMap<String, StopInfo> _stops, final HashMap<String, HashSet<String>> _busStops)
+  public void loadStops(final HashMap<String, StopInfo> stops, final HashMap<String, HashSet<String>> busStops)
   {
-    stops = _stops;
-    busStops = _busStops;
+    this.stops = stops;
+    this.busStops = busStops;
   }
 
 
@@ -123,31 +138,11 @@ public class Map
     if (userMarker == null)
     {
       userMarker = new Marker(map);
+      userMarker.setTitle(ctx.getString(R.string.user_marker));
       userMarker.setPosition(new GeoPoint(location));
-      Drawable image = ContextCompat.getDrawable(ctx, R.drawable.pin);
-      Bitmap bitmap = ((BitmapDrawable) image).getBitmap();
-      image = new BitmapDrawable(ctx.getResources(), Bitmap.createScaledBitmap(bitmap, 50, 80, true));
-      userMarker.setIcon(image);
+      userMarker.setIcon(userImage);
       userMarker.setAnchor(Marker.ANCHOR_CENTER, 1.0f);
-      userInfoWindow = new UserInfoWindow(R.layout.bubble, map);
-      userMarker.setInfoWindow(userInfoWindow);
       map.getOverlays().add(userMarker);
-      userMarker.setOnMarkerClickListener(new Marker.OnMarkerClickListener()
-      {
-        @Override
-        public boolean onMarkerClick(Marker marker, MapView mapView)
-        {
-          if (userInfoWindow.isOpen())
-          {
-            userInfoWindow.close();
-          }
-          else
-          {
-            userInfoWindow.open(userMarker, new GeoPoint(location), 0, -70);
-          }
-          return true;
-        }
-      });
     }
     else
     {
@@ -165,88 +160,87 @@ public class Map
     mapController.setCenter(userPoint);
   }
 
-  public void addBusStops(final String code)
+  public void zoomToRoute(final String code)
   {
-    Iterator<String> stopIds = busStops.get(code).iterator();
-    while (stopIds.hasNext())
+
+  }
+
+
+  public void addBus(final String code)
+  {
+    // add route
+    addBusStops(code);
+    map.invalidate();
+  }
+
+  public void updateBusRoute(final String code, final BusRoute route)
+  {
+    busRoutes.put(code, route);
+    if (busRoutesOnMap.containsKey(code))
     {
-      String id = stopIds.next();
-      HashSet<String> thisStopRoutes = stopBuses.get(id);
-      if (thisStopRoutes == null)
-      { // create record and a marker
-        thisStopRoutes = new HashSet<String>();
-        stopMarkersOnMap.put(id, null);
-      }
-      thisStopRoutes.add(code);
-      stopBuses.put(id, thisStopRoutes);
+      // replace the old polyline with a new one
     }
   }
 
-  public void removeBusStops(final String code)
+  public void removeBus(final String code)
+  {
+    // remove route
+    removeBusStops(code);
+    map.invalidate();
+  }
+
+  private void addBusStops(final String code)
   {
     Iterator<String> stopIds = busStops.get(code).iterator();
     while (stopIds.hasNext())
     {
       String id = stopIds.next();
-      HashSet<String> thisStopRoutes = stopBuses.get(id);
-      if (thisStopRoutes == null)
+      if (stopsOnMap.containsKey(id))
       {
-        thisStopRoutes = new HashSet<String>();
-      }
-      thisStopRoutes.remove(code);
-      if (thisStopRoutes.size() == 0)
-      { // remove marker and HashSet from stopBuses
-        Marker stopMarkerToRemove = stopMarkersOnMap.get(id);
-        if (stopMarkerToRemove != null)
-        {
-          stopMarkerToRemove.remove(map);
-          stopMarkersOnMap.remove(id);
-        }
-        if (stopBuses.containsKey(id))
-        {
-          stopBuses.remove(id);
-        }
+        stopsOnMap.get(id).addBus(code);
       }
       else
-      { // replace
-        stopBuses.put(id, thisStopRoutes);
+      {
+        stopsOnMap.put(id,
+                new StopMarker(
+                        stopMarkerFactory(stops.get(id)), code
+                )
+        );
       }
     }
   }
 
-//    Iterator<String> stopMarkersOnMapIds = stopMarkersOnMap.keySet().iterator();
-//    // remove those missing in the new HashMap
-//    while (stopMarkersOnMapIds.hasNext())
-//    {
-//      String stopId = stopMarkersOnMapIds.next();
-//      if (!busStops.containsKey(stopId))
-//      {
-//        Marker markerToRemove =  stopMarkersOnMap.get(stopId);
-//        if (markerToRemove != null)
-//        {
-//          markerToRemove.remove(map);
-//        }
-//        stopMarkersOnMap.remove(stopId);
-//      }
-//    }
-//    // add new stops
-//    stopMarkersOnMapIds = stopMarkersOnMap.keySet().iterator();
-//    while (stopMarkersOnMapIds.hasNext())
-//    {
-//      String stopId = stopMarkersOnMapIds.next();
-//      if (!busStops.containsKey(stopId))
-//      {
-//        Marker markerToRemove =  stopMarkersOnMap.get(stopId);
-//        if (markerToRemove != null)
-//        {
-//          markerToRemove.remove(map);
-//        }
-//        stopMarkersOnMap.remove(stopId);
-//      }
-//      // add new stops
-//
-//    }
-//  }
+  private void removeBusStops(final String code)
+  {
+    boolean closed = false;
+    Iterator<String> stopIds = busStops.get(code).iterator();
+    while (stopIds.hasNext())
+    {
+      String id = stopIds.next();
+      if (stopsOnMap.containsKey(id))
+      {
+        StopMarker temp = stopsOnMap.get(id);
+        if (!closed)
+        {
+          // since right now it's a bit of problem to detect where popup opened always close
+          InfoWindow wn = temp.getMarker().getInfoWindow();
+          if (wn.isOpen())
+          {
+            wn.close();
+          }
+          closed = true;
+        }
+        int left = temp.removeBus(code);
+        if (left == 0)
+        {
+          Marker mr = temp.getMarker();
+          mr.remove(map);
+          stopsOnMap.remove(id);
+        }
+      }
+    }
+  }
+
 
   private void hideUserInfo()
   {
@@ -277,5 +271,16 @@ public class Map
 //        }
 //      });
     }
+  }
+
+  private Marker stopMarkerFactory(StopInfo info)
+  {
+    Marker mr = new Marker(map);
+    mr.setPosition(new GeoPoint(info.lat, info.lng));
+    mr.setIcon(stopImage);
+    mr.setAnchor(Marker.ANCHOR_CENTER, 1.0f);
+    mr.setTitle(info.name);
+    map.getOverlays().add(mr);
+    return mr;
   }
 }

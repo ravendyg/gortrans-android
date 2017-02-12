@@ -36,6 +36,7 @@ import java.util.HashSet;
 
 import info.nskgortrans.maps.Adapters.BusListAdapter;
 import info.nskgortrans.maps.DataClasses.BusListElement;
+import info.nskgortrans.maps.DataClasses.BusRoute;
 import info.nskgortrans.maps.DataClasses.StopInfo;
 import info.nskgortrans.maps.DataClasses.WayGroup;
 import info.nskgortrans.maps.Services.BusPositionService;
@@ -80,6 +81,9 @@ public class MainActivity extends AppCompatActivity
 
   private HashMap<String, String> routeColors;
 
+  private HashMap<String, StopInfo> stops;
+  private HashMap<String, HashSet<String>> busStops;
+
 
 //  private SocketIO socket;
 
@@ -93,7 +97,7 @@ public class MainActivity extends AppCompatActivity
     // create colors array
     Integer[] colors = {R.color.busColor1, R.color.busColor2, R.color.busColor3, R.color.busColor4, R.color.busColor5};
     availableColors = new ArrayList<>(Arrays.asList(colors));
-    routeColors = new HashMap<String, String>();
+    routeColors = new HashMap<>();
     // handle list of selected buses
     displayedBuses = new ArrayList<>(Arrays.asList(new BusListElement[0]));
     displayedBusesAdapter = new BusListAdapter(context, displayedBuses);
@@ -322,20 +326,24 @@ public class MainActivity extends AppCompatActivity
 
     addBusListener(code);
 
-    map.addBusStops(code);
+    map.addBus(code);
 
     if (zoom)
     {
-      zoomToRoute(code);
+      map.zoomToRoute(code);
     }
   }
 
   public void removeBus(final String code)
   {
-    removeBusFromMap(code);
-    removeRoute(code);
+    freeBusResources(code);
+    map.removeBus(code);
     displayedBusesAdapter.notifyDataSetChanged();
-    removeBusListener(code);
+  }
+
+  public void zoomToRoute(final String code)
+  {
+    map.zoomToRoute(code);
   }
 
   private void removeDialog()
@@ -347,10 +355,6 @@ public class MainActivity extends AppCompatActivity
     }
   }
 
-  public void zoomToRoute(final String code)
-  {
-
-  }
 
   private void addBusListener(final String code)
   {
@@ -394,11 +398,11 @@ public class MainActivity extends AppCompatActivity
               (HashMap<String, HashSet<String>>) intent.getSerializableExtra("busStops")
             );
             loadWayGrous();
-            ((FloatingActionButton) findViewById(R.id.bus_search_btn)).setVisibility(View.VISIBLE);
+            findViewById(R.id.bus_search_btn).setVisibility(View.VISIBLE);
           }
           else if (eventType.equals("route"))
           {
-            drawRoute(intent.getStringExtra("code"), intent.getStringExtra("data"));
+            map.updateBusRoute(intent.getStringExtra("code"), (BusRoute) intent.getSerializableExtra("data"));
           }
           else if (eventType.equals("state-update"))
           {
@@ -409,16 +413,6 @@ public class MainActivity extends AppCompatActivity
       LocalBroadcastManager.getInstance(context).
         registerReceiver(serviceReceiver, new IntentFilter("info.nskgortrans.maps.main.activity"));
     }
-  }
-
-  private void drawRoute(final String code, final String routeStr)
-  {
-
-  }
-
-  private void removeRoute(final String code)
-  {
-    map.removeBusStops(code);
   }
 
 
@@ -527,8 +521,10 @@ public class MainActivity extends AppCompatActivity
   {
   }
 
-  private boolean removeBusFromMap(String code)
+  private boolean freeBusResources(String code)
   {
+    removeBusListener(code);
+
     boolean removed = false;
     for (int i = 0; i < displayedBuses.size(); i++)
     {

@@ -1,5 +1,7 @@
 package info.nskgortrans.maps.DataClasses;
 
+import org.osmdroid.views.overlay.Marker;
+
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -15,6 +17,7 @@ public class StopInfo implements Serializable
   public double lng;
   public String name;
   public HashSet<String> buses;
+
 
   public StopInfo(String _id, double _lat, double _lng)
   {
@@ -34,4 +37,5 @@ public class StopInfo implements Serializable
   {
     buses.add(code);
   }
+
 }
