@@ -23,9 +23,13 @@ import org.osmdroid.tileprovider.tilesource.TileSourceFactory;
 import org.osmdroid.util.GeoPoint;
 import org.osmdroid.views.MapView;
 import org.osmdroid.views.Projection;
+import org.osmdroid.views.overlay.ItemizedOverlay;
 import org.osmdroid.views.overlay.Marker;
+import org.osmdroid.views.overlay.Overlay;
+import org.osmdroid.views.overlay.Polyline;
 import org.osmdroid.views.overlay.infowindow.InfoWindow;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -50,13 +54,18 @@ public class Map
   private Drawable stopImage;
   private Drawable userImage;
 
+  private String nextToZoomOn;
+
   // data
   private HashMap<String, StopInfo> stops;
   private HashMap<String, HashSet<String>> busStops;
   private HashMap<String, BusRoute> busRoutes;
   // stop markers on the map with corresponding routes counter
   private HashMap<String, StopMarker> stopsOnMap = new HashMap<>();
-  private HashMap<String, BusRoute> busRoutesOnMap = new HashMap<>(); // replace BusRoute with Polyline?
+  // route polylines
+  private HashMap<String, Polyline> busRoutesOnMap = new HashMap<>();
+  private HashSet<String> routeDisplayed = new HashSet<>();
+
 
   public void init(Context context, View view, SharedPreferences _pref)
   {
@@ -86,6 +95,7 @@ public class Map
     mapController.setZoom(zoom);
     GeoPoint startPoint = new GeoPoint(lat, lng);
     mapController.setCenter(startPoint);
+
 
     map.setMapListener(new MapListener()
     {
@@ -166,10 +176,23 @@ public class Map
   }
 
 
-  public void addBus(final String code)
+  public void addBus(final String code, int color, boolean zoom)
   {
-    // add route
+    if (zoom)
+    {
+      nextToZoomOn = code;
+    }
+
+    if (hasPolyline(code))
+    {
+      Polyline poly = busRoutesOnMap.get(code);
+      poly.setColor(color);
+    }
+
     addBusStops(code);
+
+    tryToZoom();
+
     map.invalidate();
   }
 
@@ -182,11 +205,50 @@ public class Map
     }
   }
 
-  public void removeBus(final String code)
+  public void removeBus(final String busCode)
   {
     // remove route
-    removeBusStops(code);
+    removeBusStops(busCode);
+    if (routeDisplayed.contains(busCode))
+    {
+      map.getOverlays().remove(busRoutesOnMap.get(busCode));
+    }
     map.invalidate();
+  }
+
+  public boolean hasPolyline(final String busCode)
+  {
+    return busRoutesOnMap.containsKey(busCode);
+  }
+
+  public void addPolyline(String busCode, ArrayList<GeoPoint> points, String color, boolean update)
+  {
+    Polyline poly = new Polyline();
+
+    if (hasPolyline(busCode) && update)
+    {
+      if (routeDisplayed.contains(busCode))
+      {
+        map.getOverlays().remove(busRoutesOnMap.get(busCode));
+      }
+      busRoutesOnMap.remove(busCode);
+    }
+    else if (hasPolyline(busCode))
+    {
+      return;
+    }
+
+    poly.setPoints(points);
+    busRoutesOnMap.put(busCode, poly);
+
+    if (!routeDisplayed.contains(busCode) && color != null)
+    {
+      routeDisplayed.add(busCode);
+      poly.setColor(ContextCompat.getColor(ctx, Integer.parseInt(color)));
+      map.getOverlays().add(poly);
+      resetStopAndBusMarkers();
+      map.invalidate();
+    }
   }
 
   private void addBusStops(final String code)
@@ -207,6 +269,27 @@ public class Map
                 )
         );
       }
+    }
+  }
+
+  private void resetStopAndBusMarkers()
+  {
+    Iterator stopIterator = stopsOnMap.keySet().iterator();
+    while (stopIterator.hasNext())
+    {
+      String key = (String) stopIterator.next();
+      Marker mr = stopsOnMap.get(key).getMarker();
+      map.getOverlays().remove(mr);
+      map.getOverlays().add(mr);
+    }
+  }
+
+  private void tryToZoom()
+  {
+    if (nextToZoomOn != null)
+    {
+      // zoom
+      nextToZoomOn = null;
     }
   }
 
@@ -250,35 +333,13 @@ public class Map
     }
   }
 
-  private class UserInfoWindow extends InfoWindow
-  {
-    public UserInfoWindow(int layoutResId, MapView mapView)
-    {
-      super(layoutResId, mapView);
-    }
-
-    public void onClose()
-    {
-    }
-
-    public void onOpen(Object arg0)
-    {
-//      LinearLayout layout = (LinearLayout) mView.findViewById(R.id.bubble);
-
-//      layout.setOnClickListener(new OnClickListener() {
-//        public void onClick(View v) {
-//          // Override Marker's onClick behaviour here
-//        }
-//      });
-    }
-  }
 
   private Marker stopMarkerFactory(StopInfo info)
   {
     Marker mr = new Marker(map);
     mr.setPosition(new GeoPoint(info.lat, info.lng));
     mr.setIcon(stopImage);
-    mr.setAnchor(Marker.ANCHOR_CENTER, 1.0f);
+    mr.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER);
     mr.setTitle(info.name);
     map.getOverlays().add(mr);
     return mr;

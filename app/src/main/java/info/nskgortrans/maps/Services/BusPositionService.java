@@ -16,8 +16,10 @@ import com.github.nkzawa.emitter.Emitter;
 import com.github.nkzawa.socketio.client.IO;
 import com.github.nkzawa.socketio.client.Socket;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.osmdroid.util.GeoPoint;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -51,7 +53,9 @@ public class BusPositionService extends Service
 
   private static final long SYNC_VALID_FOR = 1000 * 60 * 60 * 24;
 
-  private  String apiKey;
+  private static final String SERVER_URL = "https://test.nskgortrans.info";
+
+  private String apiKey;
 
   private Handler countDownHandler;
   private Runnable countDownRunnableData, countDownRunnableLife;
@@ -70,6 +74,7 @@ public class BusPositionService extends Service
 
   private HashMap<String, StopInfo> stops;
   private HashMap<String, HashSet<String>> busStops;
+  private HashMap<String, String> routeLastRefresh = new HashMap<>();
 
 
   public void onCreate()
@@ -94,25 +99,6 @@ public class BusPositionService extends Service
 
     loadData();
 
-
-//    // hardcoded behaviour: register receiver that will listen for bus 36
-//    if (socketReceiver == null)
-//    {
-//      socketReceiver = new BroadcastReceiver()
-//      {
-//        @Override
-//        public void onReceive(Context context, Intent intent)
-//        {
-//          String eventType = intent.getStringExtra("event");
-//          if ( eventType.equals("request add bus") )
-//          {
-//            String busCode = intent.getStringExtra("busCode");
-//            addBusListener(busCode);
-//          }
-//        }
-//      };
-//    }
-//    registerReceiver(socketReceiver, new IntentFilter("info.nskgortrans.maps.gortrans.socket-service"));
 
     if (mainReceiver == null)
     {
@@ -142,12 +128,52 @@ public class BusPositionService extends Service
               sendDataToMain();
             }
           }
+          else if (eventType.equals("add-bus-listener"))
+          {
+            String busCode = intent.getStringExtra("code");
+            boolean lineRequired = intent.getBooleanExtra("line-required", true);
+
+            //send request to the server
+            String tsp = routeLastRefresh.get(busCode);
+            if (tsp != null)
+            { // loaded from disk
+              addBusListener(busCode, Long.parseLong(tsp));
+            }
+            else
+            {
+              String routeFileName = "route_" + busCode;
+              if (FileAPI.isFileExists(getBaseContext(), routeFileName))
+              { // get route from disk
+                String routeStr = FileAPI.readFile(getBaseContext(), routeFileName);
+                try
+                {
+                  JSONObject routeData = new JSONObject(routeStr);
+                  ArrayList<GeoPoint> points = JSONParser.parseRoutePoints(routeData.getJSONArray("points"));
+                  tsp = routeData.getString("tsp");
+                  addBusListener(busCode, Long.parseLong(tsp));
+                  routeLastRefresh.put(busCode, tsp);
+                  if (lineRequired)
+                  {
+                    sendRouteToMain(points, busCode, false);
+                  }
+                }
+                catch (JSONException err)
+                {
+                  Log.e(LOG_TAG, "parse route", err);
+                }
+              }
+              else
+              { // not yet loaded even to the disk
+                addBusListener(busCode, 0);
+              }
+            }
+          }
         }
       };
     }
     registerReceiver(mainReceiver, new IntentFilter("info.nskgortrans.maps.gortrans.bus-service"));
 
-//    connectToSocket();
+    connectToSocket();
   }
 
   public int onStartCommand(Intent intent, int flags, int startId)
@@ -372,6 +398,17 @@ public class BusPositionService extends Service
       sendBroadcast(intent);
   }
 
+  private void sendRouteToMain(ArrayList<GeoPoint> points, String busCode, boolean update)
+  {
+    Intent intent = new Intent("info.nskgortrans.maps.main.activity");
+    intent.putExtra("event", "points");
+    intent.putExtra("update", update);
+    intent.putExtra("busCode", busCode);
+    intent.putExtra("points", points);
+    LocalBroadcastManager.getInstance(this).
+            sendBroadcast(intent);
+  }
+
   private void connectToSocket()
   {
     Log.e(LOG_TAG, "connect");
@@ -382,7 +419,7 @@ public class BusPositionService extends Service
       {
         try
         {
-          socketIO = IO.socket("https://maps.nskgortrans.info");
+          socketIO = IO.socket(SERVER_URL);
         }
         catch (URISyntaxException e)
         {
@@ -414,17 +451,46 @@ public class BusPositionService extends Service
     @Override
     public void call(final Object... args)
     {
-      JSONObject data = (JSONObject) args[0];
+      try
+      {
+        String busCode = (String) args[0];
+        JSONObject buses = (JSONObject) args[1];
+        JSONArray jsonPoints = (JSONArray) args[2];
 
-      Intent intent = new Intent("info.nskgortrans.maps.gortrans.socket.activity");
-      intent.putExtra("event", "bus listener created");
-      sendBroadcast(intent);
+        if (jsonPoints != null && jsonPoints.length() > 0)
+        {
+          try
+          {
+            JSONObject routeData = new JSONObject();
+            routeData.put("points", jsonPoints);
+            String tsp = "" + System.currentTimeMillis();
+            routeData.put("tsp", tsp);
+            ArrayList<GeoPoint> points = JSONParser.parseRoutePoints(jsonPoints);
+            tsp = routeData.getString("tsp");
+
+            routeLastRefresh.put(busCode, tsp);
+            sendRouteToMain(points, busCode, true);
+
+            FileAPI.writeFile(getBaseContext(), "route_" + busCode, routeData.toString());
+          }
+          catch (JSONException err)
+          {
+            Log.e(LOG_TAG, "parse route", err);
+          }
+        }
+
+        // send bus data
+      }
+      catch (Exception err)
+      {
+        Log.e(LOG_TAG, "bus listener created", err);
+      }
     }
   };
 
-  public void addBusListener(String code)
+  public void addBusListener(String code, long tsp)
   {
-    socketIO.emit("add bus listener", code);
+    socketIO.emit("add bus listener", code, tsp);
   }
 
 }

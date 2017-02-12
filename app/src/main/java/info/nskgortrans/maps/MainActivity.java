@@ -28,6 +28,7 @@ import android.widget.ListView;
 
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.osmdroid.util.GeoPoint;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -322,16 +323,7 @@ public class MainActivity extends AppCompatActivity
         icon = R.drawable.minibus;
     }
 
-    addBusToMenu(code, name, newColor, icon, type);
-
-    addBusListener(code);
-
-    map.addBus(code);
-
-    if (zoom)
-    {
-      map.zoomToRoute(code);
-    }
+    addBus(code, name, newColor, icon, type, zoom);
   }
 
   public void removeBus(final String code)
@@ -361,6 +353,7 @@ public class MainActivity extends AppCompatActivity
     Intent intent = new Intent("info.nskgortrans.maps.gortrans.bus-service");
     intent.putExtra("event", "add-bus-listener");
     intent.putExtra("code", code);
+    intent.putExtra("line-required", !map.hasPolyline(code));
     sendBroadcast(intent);
   }
 
@@ -407,6 +400,14 @@ public class MainActivity extends AppCompatActivity
           else if (eventType.equals("state-update"))
           {
             updateState(intent.getStringExtra("new-state"));
+          }
+          else if (eventType.equals("points"))
+          {
+            String busCode = intent.getStringExtra("busCode");
+            boolean update = intent.getBooleanExtra("update", false);
+            ArrayList<GeoPoint> points = (ArrayList<GeoPoint>) intent.getSerializableExtra("points");
+            String color = routeColors.get(busCode);
+            map.addPolyline(busCode, points, color, update);
           }
         }
       };
@@ -485,16 +486,6 @@ public class MainActivity extends AppCompatActivity
     super.onStop();
   }
 
-  private void connectToSocket() {
-    Log.e(LOG_TAG, "connect");
-    new Thread(new Runnable() {
-      @Override
-      public void run() {
-        Log.e(LOG_TAG, "get instance");
-//        socket = SocketIO.getInstance();
-      }
-    }).start();
-  }
 
   private void requestBusOnMap(String busCode) {
     Intent intent =
@@ -505,11 +496,15 @@ public class MainActivity extends AppCompatActivity
     sendBroadcast(intent);
   }
 
-  private void addBusToMenu(String code, String name, int color, int icon, int type)
+  private void addBus(String code, String name, int color, int icon, int type, boolean zoom)
   {
     routeColors.put(code, "" + color);
     displayedBuses.add(new BusListElement(name, code, color, icon, type));
     displayedBusesAdapter.notifyDataSetChanged();
+
+    addBusListener(code);
+
+    map.addBus(code, color, zoom);
   }
 
   private void addBusToMap(String code)

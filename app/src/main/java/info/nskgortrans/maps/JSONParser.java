@@ -5,6 +5,8 @@ import android.util.Log;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.osmdroid.api.IGeoPoint;
+import org.osmdroid.util.GeoPoint;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -22,6 +24,8 @@ import info.nskgortrans.maps.DataClasses.WayGroup;
  */
 public class JSONParser
 {
+  private static final String LOG_TAG = "JSON parser";
+
   public static long getTimestamp(JSONObject input)
   {
     long timestamp = 0;
@@ -63,7 +67,7 @@ public class JSONParser
       }
       catch (JSONException err)
       {
-        Log.e("JSON parser", "error", err);
+        Log.e(LOG_TAG, "error", err);
       }
     }
 
@@ -99,7 +103,7 @@ public class JSONParser
       }
       catch (JSONException err)
       {
-        Log.e("JSON parser", "error", err);
+        Log.e(LOG_TAG, "error", err);
       }
     }
 
@@ -127,10 +131,22 @@ public class JSONParser
       }
       catch (JSONException err)
       {
-        Log.e("JSON parser", "error", err);
+        Log.e(LOG_TAG, "error", err);
       }
     }
 
+    return out;
+  }
+
+  public static ArrayList<GeoPoint> parseRoutePoints(JSONArray points)
+          throws JSONException
+  {
+    ArrayList<GeoPoint> out = new ArrayList<>(Arrays.asList(new GeoPoint[0]));
+    for (int i = 0; i < points.length(); i++)
+    {
+      JSONObject point = points.getJSONObject(i);
+      out.add(new GeoPoint(Double.parseDouble(point.getString("lat")), Double.parseDouble(point.getString("lng"))));
+    }
     return out;
   }
 }

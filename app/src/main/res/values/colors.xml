@@ -9,10 +9,10 @@
     <color name="markerTitleBackground">#CFCFCF</color>
 
 
-    <color name="busColor1">#D50000</color>
-    <color name="busColor2">#0000FF</color>
-    <color name="busColor3">#FF9800</color>
-    <color name="busColor4">#FFFF00</color>
-    <color name="busColor5">#444444</color>
+    <color name="busColor1">#FFD50000</color>
+    <color name="busColor2">#FF0000FF</color>
+    <color name="busColor3">#FFFF9800</color>
+    <color name="busColor4">#FFFFFF00</color>
+    <color name="busColor5">#FF444444</color>
     <color name="busBg">#66B0BEC5</color>
 </resources>
