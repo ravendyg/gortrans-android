@@ -15,7 +15,9 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
+import info.nskgortrans.maps.DataClasses.BusInfo;
 import info.nskgortrans.maps.DataClasses.StopInfo;
+import info.nskgortrans.maps.DataClasses.UpdateParcel;
 import info.nskgortrans.maps.DataClasses.Way;
 import info.nskgortrans.maps.DataClasses.WayGroup;
 
@@ -148,5 +150,129 @@ public class JSONParser
       out.add(new GeoPoint(Double.parseDouble(point.getString("lat")), Double.parseDouble(point.getString("lng"))));
     }
     return out;
+  }
+
+  public static HashMap<String, UpdateParcel> parseCreatedBus(JSONObject ob)
+  {
+    HashMap<String, UpdateParcel> out = new HashMap<>();
+    try
+    {
+      Iterator<String> keys = ob.keys();
+      while (keys.hasNext())
+      {
+        String key = keys.next();
+        JSONObject busInfo = ob.getJSONObject(key);
+
+        UpdateParcel parcel = new UpdateParcel();
+        parcel.add = parseBusDict(busInfo);
+
+        out.put(key, parcel);
+      }
+    }
+    catch (JSONException err)
+    {
+      Log.e(LOG_TAG, "parseCreatedBus", err);
+    }
+
+    return out;
+  }
+
+  public static HashMap<String, UpdateParcel> parseUpdatedBus(JSONObject ob)
+  {
+    HashMap<String, UpdateParcel> out = new HashMap<>();
+    try
+    {
+      Iterator<String> keys = ob.keys();
+      while (keys.hasNext())
+      {
+        String key = keys.next();
+        JSONObject busInfo = ob.getJSONObject(key);
+
+        UpdateParcel parcel = new UpdateParcel();
+        parcel.add = parseBusDict(busInfo.getJSONObject("add"));
+        parcel.remove = parseStringList(busInfo.getJSONArray("remove"));
+        parcel.update = parseBusDict(busInfo.getJSONObject("update"));
+
+        out.put(key, parcel);
+      }
+    }
+    catch (JSONException err)
+    {
+      Log.e(LOG_TAG, "parseCreatedBus", err);
+    }
+
+    return out;
+  }
+
+  private static String[] parseStringList(JSONArray arr)
+  {
+    String[] out = {};
+    try
+    {
+      int len = arr.length();
+      out = new String[len];
+      for (int i = 0; i < len; i++)
+      {
+        out[i] = arr.getString(i);
+      }
+    }
+    catch (JSONException err)
+    {
+      Log.e(LOG_TAG, "parseStringList", err);
+    }
+
+    return out;
+  }
+
+  private static HashMap<String, BusInfo> parseBusDict(JSONObject ob)
+  {
+    HashMap<String, BusInfo> out = new HashMap<>();
+    try
+    {
+      Iterator<String> keys = ob.keys();
+      while (keys.hasNext())
+      {
+        String key = keys.next();
+        JSONObject bus = ob.getJSONObject(key);
+        BusInfo busInfo = jsonToBusInfo(bus);
+        if (busInfo != null)
+        {
+          out.put(key, busInfo);
+        }
+      }
+    }
+    catch (JSONException err)
+    {
+      Log.e(LOG_TAG, "parseBusDict", err);
+    }
+
+    return out;
+  }
+
+  private static BusInfo jsonToBusInfo(JSONObject ob)
+  {
+    BusInfo busInfo = null;
+    try
+    {
+      int azimuth = ob.getInt("azimuth");
+      String direction = ob.getString("direction");
+      int graph = ob.getInt("graph");
+      int id_typetr = ob.getInt("id_typetr");
+      double lat = ob.getDouble("lat");
+      double lng = ob.getDouble("lng");
+      String marsh = ob.getString("marsh");
+      int speed = ob.getInt("speed");
+      String time_nav = ob.getString("time_nav");
+      String title = ob.getString("title");
+
+      busInfo = new BusInfo(azimuth, direction, graph, id_typetr,
+              lat, lng, marsh, speed, time_nav, title);
+    }
+    catch (JSONException err)
+    {
+      Log.e(LOG_TAG, "jsonToBusInfo", err);
+    }
+
+    return busInfo;
   }
 }

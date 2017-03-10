@@ -1,7 +1,8 @@
 <resources>
     <string name="app_name">Транспорт Новосибирска</string>
 
-    <string name="base_url">https://maps.nskgortrans.info</string>
+    <!--<string name="base_url">https://maps.nskgortrans.info</string>-->
+    <string name="base_url">https://test.nskgortrans.info</string>
 
     <string name="search_btn">Поиск</string>
 

@@ -39,6 +39,7 @@ import info.nskgortrans.maps.Adapters.BusListAdapter;
 import info.nskgortrans.maps.DataClasses.BusListElement;
 import info.nskgortrans.maps.DataClasses.BusRoute;
 import info.nskgortrans.maps.DataClasses.StopInfo;
+import info.nskgortrans.maps.DataClasses.UpdateParcel;
 import info.nskgortrans.maps.DataClasses.WayGroup;
 import info.nskgortrans.maps.Services.BusPositionService;
 
@@ -368,7 +369,8 @@ public class MainActivity extends AppCompatActivity
           }
           else if (eventType.equals("route"))
           {
-            map.updateBusRoute(intent.getStringExtra("code"), (BusRoute) intent.getSerializableExtra("data"));
+            map.updateBusRoute(intent.getStringExtra("code"),
+                    (BusRoute) intent.getSerializableExtra("data"));
           }
           else if (eventType.equals("state-update"))
           {
@@ -381,6 +383,12 @@ public class MainActivity extends AppCompatActivity
             ArrayList<GeoPoint> points = (ArrayList<GeoPoint>) intent.getSerializableExtra("points");
             String color = routeColors.get(busCode);
             map.addPolyline(busCode, points, color, update);
+          }
+          else if (eventType.equals("bus-update"))
+          {
+            HashMap<String, UpdateParcel> parcels =
+                    (HashMap<String, UpdateParcel>) intent.getSerializableExtra("parcels");
+            map.updateBusMarkers(parcels);
           }
         }
       };

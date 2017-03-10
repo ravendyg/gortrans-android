@@ -30,9 +30,9 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
                 <!--<action android:name="android.intent.action.BROADCAST" />-->
             </intent-filter>
-                <intent-filter>
-                    <action android:name="info.nskgortrans.maps.main.activity" />
-                </intent-filter>
+            <intent-filter>
+                <action android:name="info.nskgortrans.maps.main.activity" />
+            </intent-filter>
         </activity>
         <service
             android:name=".Services.BusPositionService"

@@ -36,7 +36,9 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 
+import info.nskgortrans.maps.DataClasses.BusInfo;
 import info.nskgortrans.maps.DataClasses.StopInfo;
+import info.nskgortrans.maps.DataClasses.UpdateParcel;
 import info.nskgortrans.maps.DataClasses.WayGroup;
 import info.nskgortrans.maps.FileAPI;
 import info.nskgortrans.maps.JSONParser;
@@ -53,7 +55,7 @@ public class BusPositionService extends Service
 
   private static final long SYNC_VALID_FOR = 1000 * 60 * 60 * 24;
 
-  private static final String SERVER_URL = "https://test.nskgortrans.info";
+//  private static final String SERVER_URL = "https://test.nskgortrans.info";
 
   private String apiKey;
 
@@ -217,7 +219,7 @@ public class BusPositionService extends Service
   }
 
   /**
-   * try to load data from memoty
+   * try to load data from memory
    */
   private void loadData()
   {
@@ -409,6 +411,15 @@ public class BusPositionService extends Service
             sendBroadcast(intent);
   }
 
+  private void sendBusUpdateToMain(HashMap<String, UpdateParcel> parcels)
+  {
+    Intent intent = new Intent("info.nskgortrans.maps.main.activity");
+    intent.putExtra("event", "bus-update");
+    intent.putExtra("parcels", parcels);
+    LocalBroadcastManager.getInstance(this).
+            sendBroadcast(intent);
+  }
+
   private void connectToSocket()
   {
     Log.e(LOG_TAG, "connect");
@@ -419,7 +430,7 @@ public class BusPositionService extends Service
       {
         try
         {
-          socketIO = IO.socket(SERVER_URL);
+          socketIO = IO.socket(getString(R.string.base_url));
         }
         catch (URISyntaxException e)
         {
@@ -431,6 +442,8 @@ public class BusPositionService extends Service
         socketIO.on("connect", broadcastConnectionEstablished);
 
         socketIO.on("bus listener created", busListenerCreated);
+
+        socketIO.on("bus update", busUpdate);
       }
     }).start();
   }
@@ -457,6 +470,9 @@ public class BusPositionService extends Service
         JSONObject buses = (JSONObject) args[1];
         JSONArray jsonPoints = (JSONArray) args[2];
 
+        HashMap<String, UpdateParcel> parcels = JSONParser.parseCreatedBus(buses);
+        sendBusUpdateToMain(parcels);
+
         if (jsonPoints != null && jsonPoints.length() > 0)
         {
           try
@@ -478,12 +494,28 @@ public class BusPositionService extends Service
             Log.e(LOG_TAG, "parse route", err);
           }
         }
-
-        // send bus data
       }
       catch (Exception err)
       {
         Log.e(LOG_TAG, "bus listener created", err);
+      }
+    }
+  };
+
+  private Emitter.Listener busUpdate = new Emitter.Listener()
+  {
+    @Override
+    public void call(final Object... args)
+    {
+      try
+      {
+        JSONObject buses = (JSONObject) args[0];
+        HashMap<String, UpdateParcel> parcels = JSONParser.parseUpdatedBus(buses);
+        sendBusUpdateToMain(parcels);
+      }
+      catch (Exception err)
+      {
+        Log.e(LOG_TAG, "bus update", err);
       }
     }
   };
