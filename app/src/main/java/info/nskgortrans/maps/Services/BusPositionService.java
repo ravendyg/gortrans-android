@@ -530,5 +530,9 @@ public class BusPositionService extends Service
     socketIO.emit("add bus listener", code, tsp);
   }
 
+  public void removeBusListener(String code, long tsp)
+  {
+    socketIO.emit("add bus listener", code, tsp);
+  }
 }
 

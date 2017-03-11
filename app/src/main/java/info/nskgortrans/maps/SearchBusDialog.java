@@ -243,6 +243,11 @@ public class SearchBusDialog
       }
     }
 
+    for (int i = 0; i < result.size(); i++)
+    {
+      result.get(i).even = i % 2 == 0;
+    }
+
     adapter.notifyDataSetChanged();
   }
 

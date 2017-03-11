@@ -19,6 +19,8 @@ public class Way
   public String code;
   public int type;
 
+  public boolean even = true;
+
   public Way(JSONObject input, int _type)
     throws JSONException
   {

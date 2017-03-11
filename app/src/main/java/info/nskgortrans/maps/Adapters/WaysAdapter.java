@@ -76,9 +76,23 @@ public class WaysAdapter extends BaseAdapter
       view = inflater.inflate(R.layout.adapter_way_group_item, parent, false);
     }
 
-    TextView name = ((TextView) view.findViewById(R.id.busName));
+    if (element.even)
+    {
+      view.setBackgroundColor(ctx.getResources().getColor(R.color.busBg));
+    }
+    else
+    {
+      view.setBackgroundColor(ctx.getResources().getColor(R.color.whitish));
+    }
 
+    TextView name = ((TextView) view.findViewById(R.id.busName));
     name.setText(element.name);
+
+    TextView stopb = ((TextView) view.findViewById(R.id.stopb));
+    stopb.setText(element.stopb);
+
+    TextView stope = ((TextView) view.findViewById(R.id.stope));
+    stope.setText(element.stope);
 
     return view;
   }
