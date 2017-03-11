@@ -87,6 +87,8 @@ public class MainActivity extends AppCompatActivity
   private HashMap<String, HashSet<String>> busStops;
 
 
+
+
 //  private SocketIO socket;
 
   @Override
@@ -298,6 +300,11 @@ public class MainActivity extends AppCompatActivity
     }
 
     addBus(code, name, newColor, icon, type, zoom);
+
+    if (zoom)
+    {
+      storeDisplayed();
+    }
   }
 
   public void removeBus(final String code)
@@ -305,11 +312,45 @@ public class MainActivity extends AppCompatActivity
     freeBusResources(code);
     map.removeBus(code);
     displayedBusesAdapter.notifyDataSetChanged();
+    storeDisplayed();
   }
 
   public void zoomToRoute(final String code)
   {
     map.zoomToRoute(code);
+  }
+
+  private void storeDisplayed()
+  {
+    SharedPreferences.Editor editor = pref.edit();
+    String displayed = "";
+    for (BusListElement el: displayedBuses)
+    {
+      displayed += el.code + "$";
+    }
+    editor.putString("displayed", displayed);
+    editor.commit();
+  }
+
+  private void replayDisplayed()
+  {
+    try
+    {
+      String displayed = pref.getString("displayed", "");
+      String[] codes = displayed.split("\\$");
+      for (String code : codes)
+      {
+        String codeChunks[] = code.split("\\-");
+        if (codeChunks.length == 4)
+        {
+          selectBus(code, codeChunks[3], Integer.parseInt(codeChunks[0]), false);
+        }
+      }
+    }
+    catch (Exception err)
+    {
+      Log.e(LOG_TAG, "parse displayed", err);
+    }
   }
 
   private void removeDialog()
@@ -366,6 +407,7 @@ public class MainActivity extends AppCompatActivity
             );
             loadWayGrous();
             findViewById(R.id.bus_search_btn).setVisibility(View.VISIBLE);
+            replayDisplayed();
           }
           else if (eventType.equals("route"))
           {

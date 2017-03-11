@@ -54,5 +54,4 @@ public class Way
     String out = "" + type + "|" + code + "|" + marsh + "|" + name + "|" + stopb + "|" + stope;
     return out;
   }
-
 }
