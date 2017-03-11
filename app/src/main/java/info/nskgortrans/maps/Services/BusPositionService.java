@@ -35,6 +35,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
+import java.util.StringTokenizer;
 
 import info.nskgortrans.maps.DataClasses.BusInfo;
 import info.nskgortrans.maps.DataClasses.StopInfo;
@@ -72,7 +74,7 @@ public class BusPositionService extends Service
   private ArrayList<WayGroup> wayGroups;
   private String routesDataStr = "";
 
-  private ArrayList<String> slectedBuses;
+  private HashSet<String> selectedBuses = new HashSet<>();
 
   private HashMap<String, StopInfo> stops;
   private HashMap<String, HashSet<String>> busStops;
@@ -85,7 +87,6 @@ public class BusPositionService extends Service
     super.onCreate();
 
     String [] _buses = {};
-    slectedBuses = new ArrayList<>(Arrays.asList(_buses));
 
     countDownHandler = new Handler();
 
@@ -134,7 +135,7 @@ public class BusPositionService extends Service
           else if (eventType.equals("add-bus-listener"))
           {
             String busCode = intent.getStringExtra("code");
-//            boolean lineRequired = intent.getBooleanExtra("line-required", true);
+            selectedBuses.add(busCode);
 
             //send request to the server
             String tsp = routeLastRefresh.get(busCode);
@@ -167,10 +168,12 @@ public class BusPositionService extends Service
                 addBusListener(busCode, 0);
               }
             }
-//            if (lineRequired)
-//            {
               sendRouteToMain(busCode);
-//            }
+          }
+          else if(eventType.equals("remove-bus-listener"))
+          {
+            String busCode = intent.getStringExtra("code");
+            removeBusListener(busCode);
           }
         }
       };
@@ -204,7 +207,11 @@ public class BusPositionService extends Service
       @Override
       public void run()
       {
-        // stop receiving data
+        Iterator<String> selectedIterator = selectedBuses.iterator();
+        while (selectedIterator.hasNext())
+        {
+          removeBusListener(selectedIterator.next());
+        }
       }
     };
     countDownHandler.postDelayed(countDownRunnableData, DATA_WITHOUT_ACTIVITY);
@@ -530,9 +537,10 @@ public class BusPositionService extends Service
     socketIO.emit("add bus listener", code, tsp);
   }
 
-  public void removeBusListener(String code, long tsp)
+  public void removeBusListener(String busCode)
   {
-    socketIO.emit("add bus listener", code, tsp);
+    socketIO.emit("remove bus listener", busCode);
+    selectedBuses.remove(busCode);
   }
 }
 

@@ -238,6 +238,9 @@ public class Map
     if (routeDisplayed.contains(busCode))
     {
       map.getOverlays().remove(busRoutesOnMap.get(busCode));
+      routeDisplayed.remove(busCode);
+
+      removeBusMarker(busCode, null);
     }
     map.invalidate();
   }
@@ -470,12 +473,25 @@ public class Map
   {
     if (busMarkers.containsKey(busCode))
     {
+      List<Overlay> over = map.getOverlays();
       HashMap<String, Marker> mrs = busMarkers.get(busCode);
-      if (mrs.containsKey(graph))
+      if (graph != null)
       {
-        Marker marker = mrs.get(graph);
-        map.getOverlays().remove(marker);
+        if (mrs.containsKey(graph))
+        {
+          Marker marker = mrs.get(graph);
+          over.remove(marker);
+        }
       }
+      else
+      {
+        Iterator<Marker> mrIterator = mrs.values().iterator();
+        while (mrIterator.hasNext())
+        {
+          over.remove(mrIterator.next());
+        }
+      }
+      busMarkers.remove(busCode);
     }
   }
 

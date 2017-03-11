@@ -368,7 +368,6 @@ public class MainActivity extends AppCompatActivity
     Intent intent = new Intent("info.nskgortrans.maps.gortrans.bus-service");
     intent.putExtra("event", "add-bus-listener");
     intent.putExtra("code", code);
-//    intent.putExtra("line-required", !map.hasPolyline(code));
     sendBroadcast(intent);
   }
 
