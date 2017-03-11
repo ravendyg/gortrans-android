@@ -77,6 +77,7 @@ public class BusPositionService extends Service
   private HashMap<String, StopInfo> stops;
   private HashMap<String, HashSet<String>> busStops;
   private HashMap<String, String> routeLastRefresh = new HashMap<>();
+  private HashMap<String, ArrayList<GeoPoint>> lines = new HashMap<>();
 
 
   public void onCreate()
@@ -133,7 +134,7 @@ public class BusPositionService extends Service
           else if (eventType.equals("add-bus-listener"))
           {
             String busCode = intent.getStringExtra("code");
-            boolean lineRequired = intent.getBooleanExtra("line-required", true);
+//            boolean lineRequired = intent.getBooleanExtra("line-required", true);
 
             //send request to the server
             String tsp = routeLastRefresh.get(busCode);
@@ -151,13 +152,10 @@ public class BusPositionService extends Service
                 {
                   JSONObject routeData = new JSONObject(routeStr);
                   ArrayList<GeoPoint> points = JSONParser.parseRoutePoints(routeData.getJSONArray("points"));
+                  lines.put(busCode, points);
                   tsp = routeData.getString("tsp");
                   addBusListener(busCode, Long.parseLong(tsp));
                   routeLastRefresh.put(busCode, tsp);
-                  if (lineRequired)
-                  {
-                    sendRouteToMain(points, busCode, false);
-                  }
                 }
                 catch (JSONException err)
                 {
@@ -169,6 +167,10 @@ public class BusPositionService extends Service
                 addBusListener(busCode, 0);
               }
             }
+//            if (lineRequired)
+//            {
+              sendRouteToMain(busCode);
+//            }
           }
         }
       };
@@ -400,15 +402,17 @@ public class BusPositionService extends Service
       sendBroadcast(intent);
   }
 
-  private void sendRouteToMain(ArrayList<GeoPoint> points, String busCode, boolean update)
+  private void sendRouteToMain(String busCode)
   {
-    Intent intent = new Intent("info.nskgortrans.maps.main.activity");
-    intent.putExtra("event", "points");
-    intent.putExtra("update", update);
-    intent.putExtra("busCode", busCode);
-    intent.putExtra("points", points);
-    LocalBroadcastManager.getInstance(this).
-            sendBroadcast(intent);
+    if (lines.containsKey(busCode))
+    {
+      Intent intent = new Intent("info.nskgortrans.maps.main.activity");
+      intent.putExtra("event", "points");
+      intent.putExtra("busCode", busCode);
+      intent.putExtra("points", lines.get(busCode));
+      LocalBroadcastManager.getInstance(this).
+              sendBroadcast(intent);
+    }
   }
 
   private void sendBusUpdateToMain(HashMap<String, UpdateParcel> parcels)
@@ -485,7 +489,8 @@ public class BusPositionService extends Service
             tsp = routeData.getString("tsp");
 
             routeLastRefresh.put(busCode, tsp);
-            sendRouteToMain(points, busCode, true);
+            lines.put(busCode, points);
+            sendRouteToMain(busCode);
 
             FileAPI.writeFile(getBaseContext(), "route_" + busCode, routeData.toString());
           }

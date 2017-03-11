@@ -11,6 +11,7 @@ import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.location.Location;
 import android.support.v4.content.ContextCompat;
+import android.support.v4.content.IntentCompat;
 import android.util.Log;
 import android.view.View;
 
@@ -57,7 +58,7 @@ public class Map
   private Marker userMarker;
   private InfoWindow userInfoWindow;
 
-  private Drawable stopImage, redMarkerImage;
+  private Drawable stopImage;
   private Drawable userImage;
 
   private String nextToZoomOn;
@@ -74,6 +75,9 @@ public class Map
   private HashSet<String> routeDisplayed = new HashSet<>();
 
   private HashMap<String, HashMap<String, Marker>> busMarkers = new HashMap<>();
+
+  private HashMap<String, Drawable> busMarkerIcons = new HashMap<>();
+  private HashMap<String, String> colorsMap = new HashMap<>();
 
 
   public void init(Context context, View view, SharedPreferences _pref)
@@ -93,10 +97,11 @@ public class Map
     Bitmap stopBitmap = ((BitmapDrawable) stopImage).getBitmap();
     stopImage = new BitmapDrawable(ctx.getResources(), Bitmap.createScaledBitmap(stopBitmap, 50, 50, true));
 
-    redMarkerImage = ContextCompat.getDrawable(ctx, R.drawable.bus_marker_red);
-    Bitmap redMarkerBitmap = ((BitmapDrawable) redMarkerImage).getBitmap();
-    redMarkerImage = new BitmapDrawable(ctx.getResources(),
-            Bitmap.createScaledBitmap(redMarkerBitmap, 50, 74, true));
+    busMarkerIcons.put(""+R.color.busColor1, createMarkerImage(R.drawable.bus_marker_red));
+    busMarkerIcons.put(""+R.color.busColor2, createMarkerImage(R.drawable.bus_marker_blue));
+    busMarkerIcons.put(""+R.color.busColor3, createMarkerImage(R.drawable.bus_marker_orange));
+    busMarkerIcons.put(""+R.color.busColor4, createMarkerImage(R.drawable.bus_marker_yellow));
+    busMarkerIcons.put(""+R.color.busColor5, createMarkerImage(R.drawable.bus_marker_gray));
 
     userImage = ContextCompat.getDrawable(ctx, R.drawable.pin);
     Bitmap userBitmap = ((BitmapDrawable) userImage).getBitmap();
@@ -202,6 +207,7 @@ public class Map
     {
       Polyline poly = busRoutesOnMap.get(code);
       poly.setColor(color);
+      colorsMap.put(code, "" + color);
     }
 
     addBusStops(code);
@@ -224,6 +230,7 @@ public class Map
   {
     // remove route
     removeBusStops(busCode);
+    colorsMap.remove(busCode);
     if (routeDisplayed.contains(busCode))
     {
       map.getOverlays().remove(busRoutesOnMap.get(busCode));
@@ -236,22 +243,16 @@ public class Map
     return busRoutesOnMap.containsKey(busCode);
   }
 
-  public void addPolyline(String busCode, ArrayList<GeoPoint> points, String color, boolean update)
+  public void addPolyline(String busCode, ArrayList<GeoPoint> points, String color)
   {
     Polyline poly = new Polyline();
 
-    if (hasPolyline(busCode) && update)
+
+    if (routeDisplayed.contains(busCode))
     {
-      if (routeDisplayed.contains(busCode))
-      {
-        map.getOverlays().remove(busRoutesOnMap.get(busCode));
-      }
-      busRoutesOnMap.remove(busCode);
+      map.getOverlays().remove(busRoutesOnMap.get(busCode));
     }
-    else if (hasPolyline(busCode))
-    {
-      return;
-    }
+    busRoutesOnMap.remove(busCode);
 
     poly.setPoints(points);
     busRoutesOnMap.put(busCode, poly);
@@ -260,11 +261,12 @@ public class Map
     if (!routeDisplayed.contains(busCode) && color != null)
     {
       routeDisplayed.add(busCode);
-      poly.setColor(ContextCompat.getColor(ctx, Integer.parseInt(color)));
-      map.getOverlays().add(poly);
-      resetStopAndBusMarkers();
-      map.invalidate();
     }
+    poly.setColor(ContextCompat.getColor(ctx, Integer.parseInt(color)));
+    colorsMap.put(busCode, color);
+    map.getOverlays().add(poly);
+    resetStopAndBusMarkers();
+    map.invalidate();
 
     tryToZoom();
   }
@@ -291,7 +293,7 @@ public class Map
       while (addIterator.hasNext())
       {
         String graph = addIterator.next();
-        buses.put(graph, busMarkerFactory(parcel.add.get(graph)));
+        buses.put(graph, busMarkerFactory(busCode, parcel.add.get(graph)));
       }
       // remove
       for (String graph: parcel.remove)
@@ -449,11 +451,12 @@ public class Map
     return mr;
   }
 
-  private Marker busMarkerFactory(BusInfo info)
+  private Marker busMarkerFactory(String busCode, BusInfo info)
   {
     Marker mr = new Marker(map);
     mr.setPosition(new GeoPoint(info.lat, info.lng));
-    mr.setIcon(redMarkerImage);
+    String color = colorsMap.get(busCode);
+    mr.setIcon(busMarkerIcons.get(color));
     mr.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER);
     mr.setRotation(transformAzimuth(info.azimuth));
     map.getOverlays().add(mr);
@@ -504,5 +507,14 @@ public class Map
   private float transformAzimuth(int azimuth)
   {
     return (90 - azimuth);
+  }
+
+  private Drawable createMarkerImage(int resource)
+  {
+    Drawable markerImage = ContextCompat.getDrawable(ctx, resource);
+    Bitmap redMarkerBitmap = ((BitmapDrawable) markerImage).getBitmap();
+    markerImage = new BitmapDrawable(ctx.getResources(),
+            Bitmap.createScaledBitmap(redMarkerBitmap, 50, 50, true));
+    return markerImage;
   }
 }

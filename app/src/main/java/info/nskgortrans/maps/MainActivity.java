@@ -327,7 +327,7 @@ public class MainActivity extends AppCompatActivity
     Intent intent = new Intent("info.nskgortrans.maps.gortrans.bus-service");
     intent.putExtra("event", "add-bus-listener");
     intent.putExtra("code", code);
-    intent.putExtra("line-required", !map.hasPolyline(code));
+//    intent.putExtra("line-required", !map.hasPolyline(code));
     sendBroadcast(intent);
   }
 
@@ -379,10 +379,9 @@ public class MainActivity extends AppCompatActivity
           else if (eventType.equals("points"))
           {
             String busCode = intent.getStringExtra("busCode");
-            boolean update = intent.getBooleanExtra("update", false);
             ArrayList<GeoPoint> points = (ArrayList<GeoPoint>) intent.getSerializableExtra("points");
             String color = routeColors.get(busCode);
-            map.addPolyline(busCode, points, color, update);
+            map.addPolyline(busCode, points, color);
           }
           else if (eventType.equals("bus-update"))
           {
