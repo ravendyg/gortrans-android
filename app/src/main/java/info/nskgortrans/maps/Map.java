@@ -7,6 +7,10 @@ package info.nskgortrans.maps;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.location.Location;
@@ -336,26 +340,24 @@ public class Map
   private void resetStopAndBusMarkers()
   {
     List<Overlay> over = map.getOverlays();
-    Iterator<String> stopIterator = stopsOnMap.keySet().iterator();
+    Iterator<StopMarker> stopIterator = stopsOnMap.values().iterator();
     while (stopIterator.hasNext())
     {
-      String key = stopIterator.next();
-      Marker mr = stopsOnMap.get(key).getMarker();
+      Marker mr = stopIterator.next().getMarker();
       over.remove(mr);
       over.add(mr);
     }
-//    Iterator<HashMap<String, Marker>> busHoldersIterator = busMarkers.values().iterator();
-//    while (busHoldersIterator.hasNext())
-//    {
-//      HashMap<String, Marker> temp = busHoldersIterator.next();
-//      Iterator<Marker> markerIterator = temp.values().iterator();
-//      while (markerIterator.hasNext())
-//      {
-//        Marker mr = markerIterator.next();
-//        over.remove(mr);
-//        over.add(mr);
-//      }
-//    }
+    Iterator<HashMap<String, Marker>> busGroupIterator = busMarkers.values().iterator();
+    while (busGroupIterator.hasNext())
+    {
+      Iterator<Marker> busIterator = busGroupIterator.next().values().iterator();
+      while (busIterator.hasNext())
+      {
+        Marker mr = busIterator.next();
+        over.remove(mr);
+        over.add(mr);
+      }
+    }
   }
 
   private void tryToZoom()
@@ -459,6 +461,7 @@ public class Map
     mr.setIcon(busMarkerIcons.get(color));
     mr.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER);
     mr.setRotation(transformAzimuth(info.azimuth));
+    mr.setTitle(info.title);
     map.getOverlays().add(mr);
     return mr;
   }
@@ -509,12 +512,16 @@ public class Map
     return (90 - azimuth);
   }
 
-  private Drawable createMarkerImage(int resource)
+  private Drawable createMarkerImage(int resId)
   {
-    Drawable markerImage = ContextCompat.getDrawable(ctx, resource);
+
+    Drawable markerImage = ContextCompat.getDrawable(ctx, resId);
     Bitmap redMarkerBitmap = ((BitmapDrawable) markerImage).getBitmap();
+
+
     markerImage = new BitmapDrawable(ctx.getResources(),
-            Bitmap.createScaledBitmap(redMarkerBitmap, 50, 50, true));
+            Bitmap.createScaledBitmap(redMarkerBitmap, 40, 54, true));
+
     return markerImage;
   }
 }
