@@ -520,7 +520,7 @@ public class Map
 
 
     markerImage = new BitmapDrawable(ctx.getResources(),
-            Bitmap.createScaledBitmap(redMarkerBitmap, 40, 54, true));
+            Bitmap.createScaledBitmap(redMarkerBitmap, 50, 60, true));
 
     return markerImage;
   }

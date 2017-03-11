@@ -15,4 +15,7 @@
     <color name="busColor4">#FFE6E600</color>
     <color name="busColor5">#FF969696</color>
     <color name="busBg">#66B0BEC5</color>
+
+    <color name="selectedSearchIcon">#FF00FF00</color>
+<color name="unselectedSearchIcon">#FFFFFFFF</color>
 </resources>

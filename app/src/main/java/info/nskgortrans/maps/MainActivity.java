@@ -406,7 +406,10 @@ public class MainActivity extends AppCompatActivity
   protected void onPause() {
     super.onPause();
 
-    map.saveState();
+    if (map != null)
+    {
+      map.saveState();
+    }
   }
 
   @Override
@@ -540,7 +543,10 @@ public class MainActivity extends AppCompatActivity
 
     if (locationGranted)
     {
-      init();
+//      init();
+      Intent intent = getIntent();
+      finish();
+      startActivity(intent);
     }
 
     return;

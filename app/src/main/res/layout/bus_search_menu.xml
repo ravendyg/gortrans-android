@@ -31,6 +31,113 @@
             android:alpha="0.6"
         />
     </FrameLayout>
+    <LinearLayout
+        android:id="@+id/search_icons"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+    >
+        <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+          android:id="@+id/icon_wrap0"
+          android:orientation="vertical"
+          android:layout_width="40dp"
+          android:layout_weight="1"
+          android:layout_height="wrap_content"
+        >
+            <ImageView
+                android:id="@+id/icon_image0"
+                android:layout_width="30dp"
+                android:layout_height="30dp"
+                android:src="@drawable/bus"
+                android:layout_gravity="center"
+            />
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:text="Автобусы"
+            />
+            <LinearLayout
+                android:id="@+id/selected_bar0"
+                style="@style/iconBar"
+            />
+        </LinearLayout>
+        <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+          android:id="@+id/icon_wrap1"
+          android:orientation="vertical"
+          android:layout_width="40dp"
+          android:layout_weight="1"
+          android:layout_height="wrap_content"
+        >
+            <ImageView
+                android:id="@+id/icon_image1"
+                android:layout_width="30dp"
+                android:layout_height="30dp"
+                android:src="@drawable/trolley"
+                android:layout_gravity="center"
+            />
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:text="Троллейбусы"
+            />
+            <LinearLayout
+                android:id="@+id/selected_bar1"
+                style="@style/iconBar"
+            />
+        </LinearLayout>
+        <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+          android:id="@+id/icon_wrap2"
+          android:orientation="vertical"
+          android:layout_width="40dp"
+          android:layout_weight="1"
+          android:layout_height="wrap_content"
+        >
+            <ImageView
+                android:id="@+id/icon_image2"
+                android:layout_width="30dp"
+                android:layout_height="30dp"
+                android:src="@drawable/tram"
+                android:layout_gravity="center"
+            />
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:text="Трамваи"
+            />
+            <LinearLayout
+                android:id="@+id/selected_bar2"
+                style="@style/iconBar"
+            />
+        </LinearLayout>
+        <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+          android:id="@+id/icon_wrap3"
+          android:orientation="vertical"
+          android:layout_width="40dp"
+          android:layout_weight="1"
+          android:layout_height="wrap_content"
+        >
+            <ImageView
+                android:id="@+id/icon_image3"
+                android:layout_width="30dp"
+                android:layout_height="30dp"
+                android:src="@drawable/minibus"
+                android:layout_gravity="center"
+            />
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:text="Маршрутки"
+            />
+            <LinearLayout
+                android:id="@+id/selected_bar3"
+                style="@style/iconBar"
+            />
+        </LinearLayout>
+    </LinearLayout>
 
     <ListView
         android:id="@+id/wayGroups"

@@ -62,7 +62,7 @@ public class JSONParser
         for (int j = 0; j < ways.length(); j++)
         {
           JSONObject way = ways.getJSONObject(j);
-          group.addWay( new Way(way) );
+          group.addWay(new Way(way, type));
         }
 
         wayGroups.add(group);

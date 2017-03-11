@@ -50,10 +50,6 @@ import static android.R.attr.type;
 
 public class BusListAdapter extends BaseAdapter
 {
-//  private static final int TYPE_MAX_COUNT = 2;
-//  private static final int TYPE_HEADER = 0;
-//  private static final int TYPE_ITEM = 1;
-
   private Context ctx;
   private LayoutInflater inflater;
   private ArrayList<BusListElement> data;
@@ -104,28 +100,5 @@ public class BusListAdapter extends BaseAdapter
 
     return view;
   }
-
-//  @Override
-//  public int getViewTypeCount()
-//  {
-//    return TYPE_MAX_COUNT;
-//  }
-//
-//  @Override
-//  public int getItemViewType(int position)
-//  {
-//    BusListElement element = getElem(position);
-//
-//    int out;
-//
-//    if (element.children > 0)
-//    {
-//      return TYPE_HEADER;
-//    }
-//    else
-//    {
-//      return TYPE_ITEM;
-//    }
-//  }
 }
 

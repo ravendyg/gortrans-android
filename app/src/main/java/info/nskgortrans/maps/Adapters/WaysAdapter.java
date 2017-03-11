@@ -28,18 +28,15 @@ import static android.R.attr.type;
 
 public class WaysAdapter extends BaseAdapter
 {
-  private static final int TYPE_MAX_COUNT = 2;
-  private static final int TYPE_HEADER = 0;
-  private static final int TYPE_ITEM = 1;
 
   private Context ctx;
   private LayoutInflater inflater;
-  private ArrayList<WayGroupElement> data;
+  private ArrayList<Way> data;
 
-  public WaysAdapter(Context context, Ways _data)
+  public WaysAdapter(Context context, ArrayList<Way> _data)
   {
     ctx = context;
-    data = _data.filteredData;
+    data = _data;
 
     inflater = (LayoutInflater) ctx.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
   }
@@ -56,9 +53,9 @@ public class WaysAdapter extends BaseAdapter
     return data.get(position);
   }
   
-  public WayGroupElement getElem(int position)
+  public Way getElem(int position)
   {
-    return (WayGroupElement) getItem(position);
+    return (Way) getItem(position);
   }
 
   @Override
@@ -72,38 +69,14 @@ public class WaysAdapter extends BaseAdapter
   {
     View view = _view;
 
-    final WayGroupElement element = getElem(position);
+    final Way element = getElem(position);
 
     if (view == null)
     {
-      if (element.children > 0)
-      {
-        view = inflater.inflate(R.layout.adapter_way_group_header, parent, false);
-      }
-      else
-      {
-        view = inflater.inflate(R.layout.adapter_way_group_item, parent, false);
-      }
+      view = inflater.inflate(R.layout.adapter_way_group_item, parent, false);
     }
 
-    TextView name;
-    if (element.children > 0)
-    {
-      name = ((TextView) view.findViewById(R.id.wayGroupHeader));
-      ImageView arrow = ((ImageView) view.findViewById(R.id.wayGroupHeaderArrow));
-      if (element.opened)
-      {
-        arrow.setImageResource(R.drawable.ic_keyboard_arrow_down_black_48dp);
-      }
-      else
-      {
-        arrow.setImageResource(R.drawable.ic_keyboard_arrow_right_black_48dp);
-      }
-    }
-    else
-    {
-      name = ((TextView) view.findViewById(R.id.busName));
-    }
+    TextView name = ((TextView) view.findViewById(R.id.busName));
 
     name.setText(element.name);
 
@@ -113,23 +86,12 @@ public class WaysAdapter extends BaseAdapter
   @Override
   public int getViewTypeCount()
   {
-    return TYPE_MAX_COUNT;
+    return 1;
   }
 
   @Override
   public int getItemViewType(int position)
   {
-    WayGroupElement element = getElem(position);
-
-    int out;
-
-    if (element.children > 0)
-    {
-      return TYPE_HEADER;
-    }
-    else
-    {
-      return TYPE_ITEM;
-    }
+    return 0;
   }
 }

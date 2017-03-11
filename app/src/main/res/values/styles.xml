@@ -19,10 +19,12 @@
         <item name="android:background">@drawable/marker_title_background</item>
     </style>
 
+    <style name="iconBar">
+        <item name="android:orientation">horizontal</item>
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">5dp</item>
+        <item name="android:layout_marginBottom">10dp</item>
+    </style>
 
-    <!--<style name="MenuFragment">-->
-        <!--<item name="android:layout_height">match_parent</item>-->
-        <!--<item name="android:layout_width">match_parent</item>-->
-    <!--</style>-->
 
 </resources>
