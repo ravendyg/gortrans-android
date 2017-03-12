@@ -68,8 +68,6 @@ public class MainActivity extends AppCompatActivity
 
   private SearchBusDialog searchDialog;
 
-  private boolean waysLoaded;
-
   private Dialog searchBusDialog = null;
 
   private Map map;
@@ -186,17 +184,7 @@ public class MainActivity extends AppCompatActivity
 
     startListenForService();
 
-    if (!isServiceRunning(BusPositionService.class))
-    {
-      startService(new Intent(this, BusPositionService.class));
-    }
-    else
-    {
-      // notify bus position service
-      Intent intent = new Intent("info.nskgortrans.maps.gortrans.bus-service");
-      intent.putExtra("event", "activity-online");
-      sendBroadcast(intent);
-    }
+    startService(new Intent(this, BusPositionService.class));
 
     searchDialog = new SearchBusDialog();
   }
@@ -465,10 +453,10 @@ public class MainActivity extends AppCompatActivity
 
     removeDialog();
 
-    // notify bus position service
-    Intent intent = new Intent("info.nskgortrans.maps.gortrans.bus-service");
-    intent.putExtra("event", "activity-offline");
-    sendBroadcast(intent);
+    if (!isServiceRunning(BusPositionService.class))
+    {
+      stopService(new Intent(this, BusPositionService.class));
+    }
 
     Log.e(LOG_TAG, "pause");
     if (serviceReceiver != null)

@@ -52,18 +52,11 @@ import info.nskgortrans.maps.R;
 public class BusPositionService extends Service
 {
   private static final String LOG_TAG = "Bus position service";
-  private static final long DATA_WITHOUT_ACTIVITY = 1000 * 60 * 5;
-  private static final long LIVE_WITHOUT_ACTIVITY = 1000 * 60 * 30;
 
   private static final long SYNC_VALID_FOR = 1000 * 60 * 60 * 24;
 
-//  private static final String SERVER_URL = "https://test.nskgortrans.info";
 
   private String apiKey;
-
-  private Handler countDownHandler;
-  private Runnable countDownRunnableData, countDownRunnableLife;
-  private boolean dataLoaded = false;
 
   private SharedPreferences pref;
 
@@ -85,10 +78,14 @@ public class BusPositionService extends Service
   public void onCreate()
   {
     super.onCreate();
+  }
 
-    String [] _buses = {};
-
-    countDownHandler = new Handler();
+  public int onStartCommand(Intent intent, int flags, int startId)
+  {
+    if (intent == null)
+    {
+      return super.onStartCommand(intent, flags, startId);
+    }
 
     pref = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
 
@@ -101,9 +98,6 @@ public class BusPositionService extends Service
       editor.commit();
     }
 
-    loadData();
-
-
     if (mainReceiver == null)
     {
       mainReceiver = new BroadcastReceiver()
@@ -112,27 +106,7 @@ public class BusPositionService extends Service
         public void onReceive(Context context, Intent intent)
         {
           String eventType = intent.getStringExtra("event");
-          if (eventType.equals("activity-offline"))
-          {
-            startFinalCountdown();
-          }
-          else if (eventType.equals("activity-online"))
-          {
-            if (countDownRunnableData != null) {
-              countDownHandler.removeCallbacks(countDownRunnableData);
-              countDownRunnableData = null;
-            }
-            if (countDownRunnableLife != null) {
-              countDownHandler.removeCallbacks(countDownRunnableLife);
-              countDownRunnableLife = null;
-            }
-            // if activity connected to already running service, provide it with data
-            if (dataLoaded)
-            {
-              sendDataToMain();
-            }
-          }
-          else if (eventType.equals("add-bus-listener"))
+          if (eventType.equals("add-bus-listener"))
           {
             String busCode = intent.getStringExtra("code");
             selectedBuses.add(busCode);
@@ -168,7 +142,7 @@ public class BusPositionService extends Service
                 addBusListener(busCode, 0);
               }
             }
-              sendRouteToMain(busCode);
+            sendRouteToMain(busCode);
           }
           else if(eventType.equals("remove-bus-listener"))
           {
@@ -180,11 +154,10 @@ public class BusPositionService extends Service
     }
     registerReceiver(mainReceiver, new IntentFilter("info.nskgortrans.maps.gortrans.bus-service"));
 
-    connectToSocket();
-  }
+    loadData();
 
-  public int onStartCommand(Intent intent, int flags, int startId)
-  {
+    connectToSocket();
+
     return super.onStartCommand(intent, flags, startId);
   }
 
@@ -194,38 +167,17 @@ public class BusPositionService extends Service
     return new Binder();
   }
 
-  public void onDestroy() {
+  public void onDestroy()
+  {
     super.onDestroy();
 
-  }
-
-
-  private void startFinalCountdown()
-  {
-    countDownRunnableData = new Runnable()
+    Iterator<String> selectedIterator = selectedBuses.iterator();
+    while (selectedIterator.hasNext())
     {
-      @Override
-      public void run()
-      {
-        Iterator<String> selectedIterator = selectedBuses.iterator();
-        while (selectedIterator.hasNext())
-        {
-          removeBusListener(selectedIterator.next());
-        }
-        socketIO.close();
-      }
-    };
-    countDownHandler.postDelayed(countDownRunnableData, DATA_WITHOUT_ACTIVITY);
-
-    countDownRunnableLife = new Runnable()
-    {
-      @Override
-      public void run()
-      {
-        stopSelf();
-      }
-    };
-    countDownHandler.postDelayed(countDownRunnableLife, LIVE_WITHOUT_ACTIVITY);
+      removeBusListener(selectedIterator.next());
+    }
+    socketIO.disconnect();
+    socketIO.close();
   }
 
   /**
@@ -385,7 +337,6 @@ public class BusPositionService extends Service
     {
       wayGroups = JSONParser.getWayGroups(routesData);
       routesDataStr = routesData.toString();
-      dataLoaded = true;
 
       stops = JSONParser.extractStops(stopsData.getJSONObject("stops"));
       busStops = JSONParser.extractBusStops(stopsData.getJSONObject("busStops"));
@@ -394,7 +345,7 @@ public class BusPositionService extends Service
     }
     catch (JSONException err)
     {
-      stops = new HashMap<String, StopInfo>();
+      stops = new HashMap<>();
       Log.e(LOG_TAG, "after load", err);
     }
   }
