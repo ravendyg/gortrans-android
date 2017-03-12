@@ -215,7 +215,6 @@ public class BusPositionService extends Service
       }
     }
 
-    lastSync = 0; // for debugging
     if (now - lastSync > SYNC_VALID_FOR || routesTimestamp == 0 || stopsTimestamp == 0)
     { // outdated or missing data
       sync(now, routesTimestamp, stopsTimestamp, routesData, stopsData);
