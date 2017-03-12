@@ -212,6 +212,7 @@ public class BusPositionService extends Service
         {
           removeBusListener(selectedIterator.next());
         }
+        socketIO.close();
       }
     };
     countDownHandler.postDelayed(countDownRunnableData, DATA_WITHOUT_ACTIVITY);
@@ -441,7 +442,7 @@ public class BusPositionService extends Service
       {
         try
         {
-          socketIO = IO.socket(getString(R.string.base_url));
+          socketIO = IO.socket(getString(R.string.base_url) + "?api_key=" + apiKey);
         }
         catch (URISyntaxException e)
         {
