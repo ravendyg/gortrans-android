@@ -118,13 +118,20 @@ public class MainActivity extends AppCompatActivity
       }
     );
 
+      pref = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
+      boolean askedPermissions = pref.getBoolean("asked-permissions", false);
+      SharedPreferences.Editor editor = pref.edit();
+      editor.putBoolean("asked-permissions", true);
+      editor.commit();
 
     // make sure all permissions granted
     if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) !=
             PackageManager.PERMISSION_GRANTED
             ) {
-      ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
-              FINE_LOCATION_PERMISSION_GRANTED);
+        if (!askedPermissions) {
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                    FINE_LOCATION_PERMISSION_GRANTED);
+        }
     }
     else
     {
@@ -134,8 +141,10 @@ public class MainActivity extends AppCompatActivity
     if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) !=
             PackageManager.PERMISSION_GRANTED
             ) {
-      ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
-              WRITE_STORAGE_PERMISSION_GRANTED);
+        if (!askedPermissions) {
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
+                    WRITE_STORAGE_PERMISSION_GRANTED);
+        }
     }
     else
     {
@@ -229,10 +238,11 @@ public class MainActivity extends AppCompatActivity
             ) {
       ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
               FINE_LOCATION_PERMISSION_GRANTED);
+    } else {
+        locationManager.requestLocationUpdates(
+                LocationManager.NETWORK_PROVIDER, MIN_POSITION_TRACKING_TIME,
+                MIN_POSITION_TRACKING_DISTANCE, locationListener);
     }
-    locationManager.requestLocationUpdates(
-            LocationManager.NETWORK_PROVIDER, MIN_POSITION_TRACKING_TIME,
-            MIN_POSITION_TRACKING_DISTANCE, locationListener);
   }
 
   public void showSearchBusDialog(View bntView)
@@ -556,27 +566,30 @@ public class MainActivity extends AppCompatActivity
       case COARSE_LOCATION_PERMISSION_GRANTED:
       case FINE_LOCATION_PERMISSION_GRANTED:
       {
-        locationGranted = true;
-        startTrackingUser();
+          if (grantResults != null && grantResults.length > 0 && grantResults[0] == 0) {
+              locationGranted = true;
+              startTrackingUser();
+              Intent intent = getIntent();
+              finish();
+              startActivity(intent);
+          }
         break;
       }
       case WRITE_STORAGE_PERMISSION_GRANTED:
       {
-        storageGranted = true;
-        break;
+          if (grantResults != null && grantResults.length > 0 && grantResults[0] == 0) {
+              storageGranted = true;
+              Intent intent = getIntent();
+              finish();
+              startActivity(intent);
+          }
+          break;
       }
 
       // other 'case' lines to check for other
       // permissions this app might request
     }
 
-    if (locationGranted)
-    {
-//      init();
-      Intent intent = getIntent();
-      finish();
-      startActivity(intent);
-    }
 
     return;
   }
