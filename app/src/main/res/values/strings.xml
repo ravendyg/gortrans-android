@@ -29,4 +29,7 @@
 
     <string name="zoom_to_route">Показать</string>
     <string name="remove_bus">Удалить</string>
+
+    <string name="storage_warning">Без доступа к хранилищу данных приложение не сможет хранить тайлы карты. Разрешите доступ чтобы продолжить работу.</string>
+    <string name="storage_warning_btn">Разрешить</string>
 </resources>

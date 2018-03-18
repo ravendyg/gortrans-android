@@ -138,17 +138,34 @@ public class MainActivity extends AppCompatActivity
       locationGranted = true;
       startTrackingUser();
     }
+
+      View warningView = findViewById(R.id.storage_warnig);
+      View mapView = findViewById(R.id.map_frame);
+
     if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) !=
             PackageManager.PERMISSION_GRANTED
             ) {
         if (!askedPermissions) {
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
                     WRITE_STORAGE_PERMISSION_GRANTED);
+        } else {
+            if (warningView != null) {
+                warningView.setVisibility(View.VISIBLE);
+            }
+            if (mapView != null) {
+                mapView.setVisibility(View.GONE);
+            }
         }
     }
     else
     {
-      storageGranted = true;
+        storageGranted = true;
+        if (warningView != null) {
+            warningView.setVisibility(View.GONE);
+        }
+        if (mapView != null) {
+            mapView.setVisibility(View.VISIBLE);
+        }
     }
 
     if (savedInstanceState != null)
@@ -486,6 +503,15 @@ public class MainActivity extends AppCompatActivity
   }
 
 
+  public void requestStorage(View view) {
+      ActivityCompat.requestPermissions(
+              this,
+              new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
+              WRITE_STORAGE_PERMISSION_GRANTED
+      );
+  }
+
+
   private boolean isServiceRunning(Class<?> serviceClass)
   {
     ActivityManager manager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
@@ -577,11 +603,29 @@ public class MainActivity extends AppCompatActivity
       }
       case WRITE_STORAGE_PERMISSION_GRANTED:
       {
-          if (grantResults != null && grantResults.length > 0 && grantResults[0] == 0) {
+          if (grantResults != null && grantResults.length > 0) {
+              View warningView = findViewById(R.id.storage_warnig);
+              View mapView = findViewById(R.id.map_frame);
+            if (grantResults[0] == 0) {
               storageGranted = true;
               Intent intent = getIntent();
               finish();
+
+              if (warningView != null) {
+                  warningView.setVisibility(View.GONE);
+              }
+              if (mapView != null) {
+                  mapView.setVisibility(View.VISIBLE);
+              }
               startActivity(intent);
+            } else {
+                if (warningView != null) {
+                  warningView.setVisibility(View.VISIBLE);
+                }
+                if (mapView != null) {
+                  mapView.setVisibility(View.GONE);
+                }
+            }
           }
           break;
       }
