@@ -224,21 +224,29 @@ public class MainActivity extends AppCompatActivity
 
     trackingUser = true;
     // Acquire a reference to the system Location Manager
-    LocationManager locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
+    final LocationManager locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
 
     // Define a listener that responds to location updates
     LocationListener locationListener = new LocationListener() {
       public void onLocationChanged(Location _location)
       {
         location = _location;
-        if (map != null)
-        {
-          map.moveUser(_location);
-        }
-        if (!userFound)
-        {
-          userFound = true;
-          ((FloatingActionButton) findViewById(R.id.user_location)).setVisibility(View.VISIBLE);
+        View gotoUserBtn = findViewById(R.id.user_location);
+        if (location != null) {
+            if (map != null) {
+                map.moveUser(_location);
+            }
+            if (!userFound) {
+                userFound = true;
+                if (gotoUserBtn != null) {
+                    gotoUserBtn.setVisibility(View.VISIBLE);
+                }
+            }
+        } else {
+            userFound = false;
+            if (gotoUserBtn != null) {
+                gotoUserBtn.setVisibility(View.GONE);
+            }
         }
       }
 

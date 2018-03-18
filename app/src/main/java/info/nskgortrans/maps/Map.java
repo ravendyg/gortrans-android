@@ -168,29 +168,30 @@ public class Map
 
   public void moveUser(final Location location)
   {
-    if (userMarker == null)
-    {
-      userMarker = new Marker(map);
-      userMarker.setTitle(ctx.getString(R.string.user_marker));
-      userMarker.setPosition(new GeoPoint(location));
-      userMarker.setIcon(userImage);
-      userMarker.setAnchor(Marker.ANCHOR_CENTER, 1.0f);
-      map.getOverlays().add(userMarker);
+    if (location != null) {
+      if (userMarker == null) {
+        userMarker = new Marker(map);
+        userMarker.setTitle(ctx.getString(R.string.user_marker));
+        userMarker.setPosition(new GeoPoint(location));
+        userMarker.setIcon(userImage);
+        userMarker.setAnchor(Marker.ANCHOR_CENTER, 1.0f);
+        map.getOverlays().add(userMarker);
+      } else {
+        userMarker.setPosition(new GeoPoint(location));
+      }
+      map.invalidate();
+      Log.e(LOG_TAG + " save posit", location.toString());
     }
-    else
-    {
-      userMarker.setPosition(new GeoPoint(location));
-    }
-    map.invalidate();
-    Log.e(LOG_TAG + " save posit", location.toString());
   }
 
 
   public void zoomToUser(Location location)
   {
-    Log.e(LOG_TAG + " zoom user", location.toString());
-    GeoPoint userPoint = new GeoPoint(location);
-    mapController.setCenter(userPoint);
+      if (location != null) {
+          Log.e(LOG_TAG + " zoom user", location.toString());
+          GeoPoint userPoint = new GeoPoint(location);
+          mapController.setCenter(userPoint);
+      }
   }
 
   public void zoomToRoute(final String code)
