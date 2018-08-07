@@ -275,63 +275,51 @@ public class MainActivity extends AppCompatActivity
     searchBusDialog = searchDialog.showDialog(context, wayGroups);
   }
 
-  public void selectBus(final String code, final String name, final int type, boolean zoom)
-  {
-    removeDialog();
-    Log.e("bus code: ", code);
+  public void selectBus(final String code, final String name, final int type, boolean zoom) {
+      removeDialog();
+      Log.e("bus code: ", code);
 
-    // check for dupes
-    for (int i = 0; i < displayedBuses.size(); i++)
-    {
-      if (displayedBuses.get(i).code.equals(code))
-      {
-        return;
+      // check for dupes
+      for (int i = 0; i < displayedBuses.size(); i++) {
+          if (displayedBuses.get(i).code.equals(code)) {
+              return;
+          }
       }
-    }
 
-    int newColor, icon;
-    int size = availableColors.size();
-    if (size > 0)
-    {
-      newColor = availableColors.get(size - 1);
-      availableColors.remove(size - 1);
-    }
-    else
-    { // remove the oldest one
-      removeBus(displayedBuses.get(0).code);
-      // and use it's color
-      newColor = availableColors.get(0);
-    }
+      int newColor, icon;
+      int size = availableColors.size();
+      if (size > 0) {
+          newColor = availableColors.get(size - 1);
+          availableColors.remove(size - 1);
+      } else { // remove the oldest one
+           removeBus(displayedBuses.get(0).code);
+           // and use it's color
+           newColor = availableColors.get(0);
+      }
 
-    // select icon
-    switch (type)
-    {
-      case 1:
-        icon = R.drawable.bus;
-      break;
+      // select icon
+      switch (type) {
+          case 1:
+              icon = R.drawable.bus;
+              break;
+          case 2:
+              icon = R.drawable.trolley;
+              break;
+          case 3:
+              icon = R.drawable.tram;
+              break;
+          default:
+              icon = R.drawable.minibus;
+      }
 
-      case 2:
-        icon = R.drawable.trolley;
-      break;
+      addBus(code, name, newColor, icon, type, zoom);
 
-      case 3:
-        icon = R.drawable.tram;
-      break;
-
-      default:
-        icon = R.drawable.minibus;
-    }
-
-    addBus(code, name, newColor, icon, type, zoom);
-
-    if (zoom)
-    {
-      storeDisplayed();
-    }
+      if (zoom) {
+          storeDisplayed();
+      }
   }
 
-  public void removeBus(final String code)
-  {
+  public void removeBus(final String code) {
     freeBusResources(code);
     map.removeBus(code);
     displayedBusesAdapter.notifyDataSetChanged();
@@ -343,8 +331,7 @@ public class MainActivity extends AppCompatActivity
     map.zoomToRoute(code);
   }
 
-  private void storeDisplayed()
-  {
+  private void storeDisplayed() {
     SharedPreferences.Editor editor = pref.edit();
     String displayed = "";
     for (BusListElement el: displayedBuses)

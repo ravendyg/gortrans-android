@@ -323,8 +323,7 @@ public class Map
   private void addBusStops(final String code)
   {
     Iterator<String> stopIds = busStops.get(code).iterator();
-    while (stopIds.hasNext())
-    {
+    while (stopIds.hasNext()) {
       String id = stopIds.next();
       if (stopsOnMap.containsKey(id))
       {

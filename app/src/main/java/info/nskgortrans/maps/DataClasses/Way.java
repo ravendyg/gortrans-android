@@ -10,50 +10,44 @@ import static android.R.id.input;
 /**
  * Created by me on 6/11/16.
  */
-public class Way
-{
-  public String marsh;
-  public String name;
-  public String stopb;
-  public String stope;
-  public String code;
-  public int type;
+public class Way {
+    public String marsh;
+    public String name;
+    public String stopb;
+    public String stope;
+    public int type;
 
-  public boolean even = true;
+    public boolean even = true;
 
-  public Way(JSONObject input, int _type)
-    throws JSONException
-  {
-    marsh = input.getString("marsh");
-    name  = input.getString("name");
-    stope = input.getString("stope");
-    stopb = input.getString("stopb");
+    public Way(JSONObject input, int type) throws JSONException {
+        marsh = input.getString("marsh");
+        name  = input.getString("name");
+        stope = input.getString("stope");
+        stopb = input.getString("stopb");
+        this.type = type + 1;
+    }
 
-    type = _type;
-    code = (type + 1 ) + "-" + marsh + "-W-" + name;
-  }
+    public Way(String[] props) {
+        type = Integer.parseInt(props[0]);
+        marsh = props[2];
+        name = props[3];
+        stopb = props[4];
+        stope = props[5];
+    }
 
-  public Way(String[] props)
-  {
-    type = Integer.parseInt(props[0]);
-    code = props[1];
-    marsh = props[2];
-    name = props[3];
-    stopb = props[4];
-    stope = props[5];
-  }
+    public Way(String name) {
+        marsh = "";
+        this.name = name;
+        stope = "";
+        stopb = "";
+    }
 
-  public Way(String _name)
-  {
-    marsh = "";
-    name  = _name;
-    stope = "";
-    stopb = "";
-  }
+    public String getCode() {
+        return type + "-" + marsh + "-W-" + name;
+    }
 
-  public String serialize()
-  {
-    String out = "" + type + "|" + code + "|" + marsh + "|" + name + "|" + stopb + "|" + stope;
-    return out;
-  }
+    public String serialize() {
+        String out = "" + type + "|" + getCode() + "|" + marsh + "|" + name + "|" + stopb + "|" + stope;
+        return out;
+    }
 }
