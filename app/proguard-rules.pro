@@ -15,3 +15,17 @@
 #-keepclassmembers class fqcn.of.javascript.interface.for.webview {
 #   public *;
 #}
+
+-dontwarn org.osmdroid.tileprovider.modules.NetworkAvailabliltyCheck
+-dontnote org.osmdroid.tileprovider.MapTileProviderBase
+-dontnote org.osmdroid.tileprovider.MapTileProviderBase
+-dontnote org.osmdroid.tileprovider.MapTileProviderBase
+-dontnote org.osmdroid.views.overlay.OverlayManager
+-dontnote org.osmdroid.views.Projection
+-dontnote org.osmdroid.api.IGeoPoint
+-dontnote org.osmdroid.tileprovider.tilesource.ITileSource
+-dontnote org.osmdroid.util.BoundingBoxE6
+-dontnote org.osmdroid.util.BoundingBox
+-dontnote org.osmdroid.events.MapListener
+-dontnote org.osmdroid.tileprovider.MapTileProviderBase
+-dontnote org.osmdroid.views.overlay.ItemizedOverlayControlView$ItemizedOverlayControlViewListener
