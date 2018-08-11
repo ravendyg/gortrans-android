@@ -43,148 +43,139 @@ import info.nskgortrans.maps.DataClasses.UpdateParcel;
 import info.nskgortrans.maps.DataClasses.WayGroup;
 import info.nskgortrans.maps.Services.BusPositionService;
 
-public class MainActivity extends AppCompatActivity
-{
-  private String LOG_TAG = "main activity";
+public class MainActivity extends AppCompatActivity {
+    private String LOG_TAG = "main activity";
 
-  Context context;
+    Context context;
 
-  private final int COARSE_LOCATION_PERMISSION_GRANTED = 10;
-  private final int FINE_LOCATION_PERMISSION_GRANTED = 11;
-  private final int WRITE_STORAGE_PERMISSION_GRANTED = 12;
+    private final int COARSE_LOCATION_PERMISSION_GRANTED = 10;
+    private final int FINE_LOCATION_PERMISSION_GRANTED = 11;
+    private final int WRITE_STORAGE_PERMISSION_GRANTED = 12;
 
-  private final int MIN_POSITION_TRACKING_TIME = 0;//1000 * 60;
-  private final long MIN_POSITION_TRACKING_DISTANCE = 0;//10;
+    private final int MIN_POSITION_TRACKING_TIME = 0;//1000 * 60;
+    private final long MIN_POSITION_TRACKING_DISTANCE = 0;//10;
 
-  private boolean locationGranted = false;
-  private boolean storageGranted = false;
+    private boolean storageGranted = false;
 
-  private SharedPreferences pref;
+    private SharedPreferences pref;
 
-  private ArrayList<WayGroup> wayGroups;
-  private String routesDataStr = "";
+    private ArrayList<WayGroup> wayGroups;
+    private String routesDataStr = "";
 
-  private BroadcastReceiver serviceReceiver = null;
+    private BroadcastReceiver serviceReceiver = null;
 
-  private SearchBusDialog searchDialog;
+    private SearchBusDialog searchDialog;
 
-  private Dialog searchBusDialog = null;
+    private Dialog searchBusDialog = null;
 
-  private Map map;
-  private Location location;
-  private boolean trackingUser = false;
-  private boolean userFound = false;
+    private Map map;
+    private Location location;
+    private boolean trackingUser = false;
+    private boolean userFound = false;
 
-  private ArrayList<Integer> availableColors;
-  private ArrayList<BusListElement> displayedBuses;
-  private BusListAdapter displayedBusesAdapter;
+    private ArrayList<Integer> availableColors;
+    private ArrayList<BusListElement> displayedBuses;
+    private BusListAdapter displayedBusesAdapter;
 
-  private HashMap<String, String> routeColors;
+    private HashMap<String, String> routeColors;
 
-  private HashMap<String, StopInfo> stops;
-  private HashMap<String, HashSet<String>> busStops;
+    private HashMap<String, StopInfo> stops;
+    private HashMap<String, HashSet<String>> busStops;
 
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
 
+        context = this;
 
+        // create colors array
+        Integer[] colors = {R.color.busColor1, R.color.busColor2, R.color.busColor3, R.color.busColor4, R.color.busColor5};
+        availableColors = new ArrayList<>(Arrays.asList(colors));
+        routeColors = new HashMap<>();
+        // handle list of selected buses
+        displayedBuses = new ArrayList<>(Arrays.asList(new BusListElement[0]));
+        displayedBusesAdapter = new BusListAdapter(context, displayedBuses);
+        ListView displayedBusesList = (ListView) findViewById(R.id.bus_list);
+        displayedBusesList.setAdapter(displayedBusesAdapter);
 
-//  private SocketIO socket;
+        displayedBusesList.setOnItemClickListener(
+            new AdapterView.OnItemClickListener()
+          {
+            @Override
+            public void onItemClick( AdapterView<?> adapterView, View view, int position, long id)
+            {
+                BusListElement elem = displayedBusesAdapter.getElem(position);
+                BusActionDialog.showDialog(context, elem.code, elem.type, elem.name);
+                }
+            }
+        );
 
-  @Override
-  protected void onCreate(Bundle savedInstanceState) {
-    super.onCreate(savedInstanceState);
-    setContentView(R.layout.activity_main);
-
-    context = this;
-
-    // create colors array
-    Integer[] colors = {R.color.busColor1, R.color.busColor2, R.color.busColor3, R.color.busColor4, R.color.busColor5};
-    availableColors = new ArrayList<>(Arrays.asList(colors));
-    routeColors = new HashMap<>();
-    // handle list of selected buses
-    displayedBuses = new ArrayList<>(Arrays.asList(new BusListElement[0]));
-    displayedBusesAdapter = new BusListAdapter(context, displayedBuses);
-    ListView displayedBusesList = (ListView) findViewById(R.id.bus_list);
-    displayedBusesList.setAdapter(displayedBusesAdapter);
-
-    displayedBusesList.setOnItemClickListener(
-      new AdapterView.OnItemClickListener()
-      {
-        @Override
-        public void onItemClick( AdapterView<?> adapterView, View view, int position, long id)
-        {
-          BusListElement elem = displayedBusesAdapter.getElem(position);
-          BusActionDialog.showDialog(context, elem.code, elem.type, elem.name);
-        }
-      }
-    );
-
-      pref = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
-      boolean askedPermissions = pref.getBoolean("asked-permissions", false);
-      SharedPreferences.Editor editor = pref.edit();
-      editor.putBoolean("asked-permissions", true);
-      editor.commit();
-
-    // make sure all permissions granted
-    if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) !=
-            PackageManager.PERMISSION_GRANTED
-            ) {
-        if (!askedPermissions) {
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
-                    FINE_LOCATION_PERMISSION_GRANTED);
-        }
-    }
-    else
-    {
-      locationGranted = true;
-      startTrackingUser();
+        handlePermissionVerifiation(savedInstanceState);
     }
 
-      View warningView = findViewById(R.id.storage_warnig);
-      View mapView = findViewById(R.id.map_frame);
+    private void handlePermissionVerifiation(Bundle savedInstanceState) {
+        pref = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
+        boolean askedPermissions = pref.getBoolean("asked-permissions", false);
+        SharedPreferences.Editor editor = pref.edit();
+        editor.putBoolean("asked-permissions", true);
+        editor.commit();
 
-    if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) !=
-            PackageManager.PERMISSION_GRANTED
-            ) {
-        if (!askedPermissions) {
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
-                    WRITE_STORAGE_PERMISSION_GRANTED);
+        // make sure all permissions granted
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED
+        ) {
+            if (!askedPermissions) {
+                ActivityCompat.requestPermissions(
+            this,
+                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                    FINE_LOCATION_PERMISSION_GRANTED
+                );
+            }
         } else {
+              startTrackingUser();
+        }
+
+        View warningView = findViewById(R.id.storage_warnig);
+        View mapView = findViewById(R.id.map_frame);
+
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                != PackageManager.PERMISSION_GRANTED
+        ) {
+            if (!askedPermissions) {
+                ActivityCompat.requestPermissions(
+                    this,
+                    new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
+                    WRITE_STORAGE_PERMISSION_GRANTED
+                );
+            } else {
+                if (warningView != null) {
+                    warningView.setVisibility(View.VISIBLE);
+                }
+                if (mapView != null) {
+                    mapView.setVisibility(View.GONE);
+                }
+            }
+        } else {
+            storageGranted = true;
             if (warningView != null) {
-                warningView.setVisibility(View.VISIBLE);
+                warningView.setVisibility(View.GONE);
             }
             if (mapView != null) {
-                mapView.setVisibility(View.GONE);
+                mapView.setVisibility(View.VISIBLE);
             }
         }
-    }
-    else
-    {
-        storageGranted = true;
-        if (warningView != null) {
-            warningView.setVisibility(View.GONE);
+
+        if (savedInstanceState != null) {
+            routesDataStr = savedInstanceState.getString("savedWays");
+            loadWayGrous();
         }
-        if (mapView != null) {
-            mapView.setVisibility(View.VISIBLE);
+
+        if (storageGranted) {
+            // storage is critical for the map
+            init();
         }
     }
-
-    if (savedInstanceState != null)
-    {
-      routesDataStr = savedInstanceState.getString("savedWays");
-      loadWayGrous();
-    }
-
-
-
-    if (storageGranted)
-    { // storage is critical for the map
-      init();
-    }
-    else
-    {
-      // do smth about permissions
-    }
-  }
 
   private void loadWayGrous()
   {
@@ -580,56 +571,47 @@ public class MainActivity extends AppCompatActivity
 
 
   // permissions handling
-  @Override
-  public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults)
-  {
-    switch (requestCode) {
-      case COARSE_LOCATION_PERMISSION_GRANTED:
-      case FINE_LOCATION_PERMISSION_GRANTED:
-      {
-          if (grantResults != null && grantResults.length > 0 && grantResults[0] == 0) {
-              locationGranted = true;
-              startTrackingUser();
-              Intent intent = getIntent();
-              finish();
-              startActivity(intent);
-          }
-        break;
-      }
-      case WRITE_STORAGE_PERMISSION_GRANTED:
-      {
-          if (grantResults != null && grantResults.length > 0) {
-              View warningView = findViewById(R.id.storage_warnig);
-              View mapView = findViewById(R.id.map_frame);
-            if (grantResults[0] == 0) {
-              storageGranted = true;
-              Intent intent = getIntent();
-              finish();
-
-              if (warningView != null) {
-                  warningView.setVisibility(View.GONE);
-              }
-              if (mapView != null) {
-                  mapView.setVisibility(View.VISIBLE);
-              }
-              startActivity(intent);
-            } else {
-                if (warningView != null) {
-                  warningView.setVisibility(View.VISIBLE);
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
+        switch (requestCode) {
+            case COARSE_LOCATION_PERMISSION_GRANTED:
+            case FINE_LOCATION_PERMISSION_GRANTED: {
+                if (grantResults != null && grantResults.length > 0 && grantResults[0] == 0) {
+                    startTrackingUser();
+                    Intent intent = getIntent();
+                    finish();
+                    startActivity(intent);
                 }
-                if (mapView != null) {
-                  mapView.setVisibility(View.GONE);
-                }
+                break;
             }
-          }
-          break;
-      }
+            case WRITE_STORAGE_PERMISSION_GRANTED: {
+                if (grantResults != null && grantResults.length > 0) {
+                    View warningView = findViewById(R.id.storage_warnig);
+                    View mapView = findViewById(R.id.map_frame);
+                    if (grantResults[0] == 0) {
+                        storageGranted = true;
+                        Intent intent = getIntent();
+                        finish();
 
-      // other 'case' lines to check for other
-      // permissions this app might request
+                        if (warningView != null) {
+                            warningView.setVisibility(View.GONE);
+                        }
+                        if (mapView != null) {
+                            mapView.setVisibility(View.VISIBLE);
+                        }
+                        startActivity(intent);
+                    } else {
+                        if (warningView != null) {
+                            warningView.setVisibility(View.VISIBLE);
+                        }
+                        if (mapView != null) {
+                            mapView.setVisibility(View.GONE);
+                        }
+                    }
+                }
+                break;
+            }
+        }
+        return;
     }
-
-
-    return;
-  }
 }

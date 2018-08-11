@@ -101,6 +101,7 @@ public class BusPositionService extends Service
         @Override
         public void onReceive(Context context, Intent intent)
         {
+            FileAPI fileAPI = new FileAPI(getBaseContext());
           String eventType = intent.getStringExtra("event");
           if (eventType.equals("add-bus-listener"))
           {
@@ -116,9 +117,9 @@ public class BusPositionService extends Service
             else
             {
               String routeFileName = "route_" + busCode;
-              if (FileAPI.isFileExists(getBaseContext(), routeFileName))
+              if (fileAPI.isFileExists(routeFileName))
               { // get route from disk
-                String routeStr = FileAPI.readFile(getBaseContext(), routeFileName);
+                String routeStr = fileAPI.readFile(routeFileName);
                 try
                 {
                   JSONObject routeData = new JSONObject(routeStr);
@@ -179,34 +180,27 @@ public class BusPositionService extends Service
   /**
    * try to load data from memory
    */
-  private void loadData()
-  {
+  private void loadData() {
+      FileAPI fileAPI = new FileAPI(getBaseContext());
     long lastSync = pref.getLong(getString(R.string.pref_last_sync), 0);
     long now = System.currentTimeMillis();
 
     long routesTimestamp = 0, stopsTimestamp = 0;
 
     JSONObject routesData = new JSONObject(), stopsData = new JSONObject();
-    if (FileAPI.isFileExists(getBaseContext(), getString(R.string.routes_file)) &&
-            FileAPI.isFileExists(getBaseContext(), getString(R.string.stops_file)))
-    {
-      try
-      {
-        String routesFileString = FileAPI.readFile(getBaseContext(), getString(R.string.routes_file));
-        String stopsFileString = FileAPI.readFile(getBaseContext(), getString(R.string.stops_file));
+    if (fileAPI.isFileExists(getString(R.string.routes_file)) && fileAPI.isFileExists(getString(R.string.stops_file))) {
+      try {
+        String routesFileString = fileAPI.readFile(getString(R.string.routes_file));
+        String stopsFileString = fileAPI.readFile(getString(R.string.stops_file));
 
         routesData = new JSONObject(routesFileString);
         stopsData = new JSONObject(stopsFileString);
 
         routesTimestamp = JSONParser.getTimestamp(routesData);
         stopsTimestamp = JSONParser.getTimestamp(stopsData);
-      }
-      catch (JSONException err)
-      {
+      } catch (JSONException err) {
         Log.e(LOG_TAG, "read file json error", err);
-      }
-      catch (Exception err)
-      {
+      } catch (Exception err) {
         Log.e(LOG_TAG, "read file general error", err);
       }
     }
@@ -297,16 +291,17 @@ public class BusPositionService extends Service
 
             long newRoutesTimestamp = JSONParser.getTimestamp(syncRoutesData);
             long newStopsTimestamp = JSONParser.getTimestamp(syncStopsData);
+            FileAPI fileAPI = new FileAPI(getBaseContext());
 
             if (newRoutesTimestamp > routesTimestamp)
             { // overwrite if any timestamp changed
-              FileAPI.writeFile(getBaseContext(), getString(R.string.routes_file), syncRoutesData.toString());
+              fileAPI.writeFile(getString(R.string.routes_file), syncRoutesData.toString());
               routesData = syncRoutesData;
             }
 
             if (newStopsTimestamp > stopsTimestamp)
             { // overwrite if any timestamp changed
-              FileAPI.writeFile(getBaseContext(), getString(R.string.stops_file), syncStopsData.toString());
+              fileAPI.writeFile(getString(R.string.stops_file), syncStopsData.toString());
               stopsData = syncStopsData;
             }
 
@@ -427,6 +422,7 @@ public class BusPositionService extends Service
         String busCode = (String) args[0];
         JSONObject buses = (JSONObject) args[1];
         JSONArray jsonPoints = (JSONArray) args[2];
+        FileAPI fileAPI = new FileAPI(getBaseContext());
 
         HashMap<String, UpdateParcel> parcels = JSONParser.parseCreatedBus(buses);
         sendBusUpdateToMain(parcels);
@@ -446,7 +442,7 @@ public class BusPositionService extends Service
             lines.put(busCode, points);
             sendRouteToMain(busCode);
 
-            FileAPI.writeFile(getBaseContext(), "route_" + busCode, routeData.toString());
+            fileAPI.writeFile("route_" + busCode, routeData.toString());
           }
           catch (JSONException err)
           {
