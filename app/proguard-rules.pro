@@ -29,3 +29,6 @@
 -dontnote org.osmdroid.events.MapListener
 -dontnote org.osmdroid.tileprovider.MapTileProviderBase
 -dontnote org.osmdroid.views.overlay.ItemizedOverlayControlView$ItemizedOverlayControlViewListener
+
+-renamesourcefileattribute SourceFile
+-keepattributes SourceFile,LineNumberTable

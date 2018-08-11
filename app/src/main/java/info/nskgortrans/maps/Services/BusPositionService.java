@@ -28,17 +28,13 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.SocketTimeoutException;
 import java.net.URISyntaxException;
-import android.os.Handler;
 
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.StringTokenizer;
 
-import info.nskgortrans.maps.DataClasses.BusInfo;
 import info.nskgortrans.maps.DataClasses.StopInfo;
 import info.nskgortrans.maps.DataClasses.UpdateParcel;
 import info.nskgortrans.maps.DataClasses.WayGroup;

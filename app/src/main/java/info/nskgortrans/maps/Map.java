@@ -69,8 +69,8 @@ public class Map
 
   // data
   private HashMap<String, StopInfo> stops;
-  private HashMap<String, HashSet<String>> busStops;
-  private HashMap<String, BusRoute> busRoutes;
+  private HashMap<String, HashSet<String>> busStops = new HashMap<>();
+  private HashMap<String, BusRoute> busRoutes = new HashMap<>();
   // stop markers on the map with corresponding routes counter
   private HashMap<String, StopMarker> stopsOnMap = new HashMap<>();
   // route polylines
@@ -138,11 +138,19 @@ public class Map
     });
   }
 
-  public void loadStops(final HashMap<String, StopInfo> stops, final HashMap<String, HashSet<String>> busStops)
-  {
-    this.stops = stops;
-    this.busStops = busStops;
-  }
+    public void loadStops(
+        HashMap<String, StopInfo> stops,
+        HashMap<String, HashSet<String>> busStops
+    ) {
+        if (stops == null) {
+            stops = new HashMap<>();
+        }
+        if (busStops == null) {
+            busStops = new HashMap<>();
+        }
+        this.stops = stops;
+        this.busStops = busStops;
+    }
 
 
 
@@ -320,25 +328,18 @@ public class Map
     map.invalidate();
   }
 
-  private void addBusStops(final String code)
-  {
-    Iterator<String> stopIds = busStops.get(code).iterator();
-    while (stopIds.hasNext()) {
-      String id = stopIds.next();
-      if (stopsOnMap.containsKey(id))
-      {
-        stopsOnMap.get(id).addBus(code);
-      }
-      else
-      {
-        stopsOnMap.put(id,
-                new StopMarker(
-                        stopMarkerFactory(stops.get(id)), code
-                )
-        );
-      }
+    private void addBusStops(final String code) {
+        for (String id : busStops.get(code)) {
+            if (stopsOnMap.containsKey(id)) {
+                stopsOnMap.get(id).addBus(code);
+            } else {
+                stopsOnMap.put(
+                        id,
+                        new StopMarker(stopMarkerFactory(stops.get(id)), code)
+                );
+            }
+        }
     }
-  }
 
   private void resetStopAndBusMarkers()
   {
@@ -445,16 +446,15 @@ public class Map
   }
 
 
-  private Marker stopMarkerFactory(StopInfo info)
-  {
-    Marker mr = new Marker(map);
-    mr.setPosition(new GeoPoint(info.lat, info.lng));
-    mr.setIcon(stopImage);
-    mr.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER);
-    mr.setTitle(info.name);
-    map.getOverlays().add(mr);
-    return mr;
-  }
+    private Marker stopMarkerFactory(StopInfo info) {
+        Marker mr = new Marker(map);
+        mr.setPosition(new GeoPoint(info.lat, info.lng));
+        mr.setIcon(stopImage);
+        mr.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER);
+        mr.setTitle(info.name);
+        map.getOverlays().add(mr);
+        return mr;
+    }
 
   private Marker busMarkerFactory(String busCode, BusInfo info)
   {
