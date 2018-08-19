@@ -13,13 +13,13 @@ import android.widget.TextView;
 public class BusActionDialog
 {
 
-  public static Dialog showDialog(final Context contex, final String code, final int type, final String name)
+  public static Dialog showDialog(final Context contex, final String code, final int type, final String name, Utils utils)
   {
     final Dialog dialog = new Dialog(contex);
     dialog.setContentView(R.layout.bus_action_dialog);
 
     TextView header = (TextView) dialog.findViewById(R.id.route_header);
-    header.setText(Utils.getTypeString(type) + ": №" + name);
+    header.setText(utils.getTypeString(type) + ": №" + name);
 
     Button zoomBtn = (Button) dialog.findViewById(R.id.zoom_route_btn);
     zoomBtn.setOnClickListener(new View.OnClickListener()

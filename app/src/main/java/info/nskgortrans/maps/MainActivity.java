@@ -13,8 +13,9 @@ import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
+import android.os.Handler;
+import android.os.Message;
 import android.preference.PreferenceManager;
-import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.content.LocalBroadcastManager;
@@ -38,33 +39,45 @@ import java.util.HashSet;
 import info.nskgortrans.maps.Adapters.BusListAdapter;
 import info.nskgortrans.maps.DataClasses.BusListElement;
 import info.nskgortrans.maps.DataClasses.BusRoute;
+import info.nskgortrans.maps.DataClasses.RoutesInfoData;
 import info.nskgortrans.maps.DataClasses.StopInfo;
 import info.nskgortrans.maps.DataClasses.UpdateParcel;
 import info.nskgortrans.maps.DataClasses.WayGroup;
 import info.nskgortrans.maps.Services.BusPositionService;
+import info.nskgortrans.maps.Services.HttpService;
+import info.nskgortrans.maps.Services.IHttpService;
+import info.nskgortrans.maps.Services.IStorageService;
+import info.nskgortrans.maps.Services.ISyncService;
+import info.nskgortrans.maps.Services.StorageService;
+import info.nskgortrans.maps.Services.SyncService;
+import info.nskgortrans.maps.UIComponents.SearchBusDialog;
 
 public class MainActivity extends AppCompatActivity {
     private String LOG_TAG = "main activity";
-
-    Context context;
 
     private final int COARSE_LOCATION_PERMISSION_GRANTED = 10;
     private final int FINE_LOCATION_PERMISSION_GRANTED = 11;
     private final int WRITE_STORAGE_PERMISSION_GRANTED = 12;
 
-    private final int MIN_POSITION_TRACKING_TIME = 0;//1000 * 60;
-    private final long MIN_POSITION_TRACKING_DISTANCE = 0;//10;
+    private final int MIN_POSITION_TRACKING_TIME = 1000 * 60;
+    private final long MIN_POSITION_TRACKING_DISTANCE = 10;
 
-    private boolean storageGranted = false;
+    private static final Integer[] colors = {R.color.busColor1, R.color.busColor2, R.color.busColor3, R.color.busColor4, R.color.busColor5};
+
+    private Context context;
+    private IStorageService storageService;
+    private ISyncService syncService;
 
     private SharedPreferences pref;
+    private Utils utils;
 
-    private ArrayList<WayGroup> wayGroups;
-    private String routesDataStr = "";
+    private static Handler syncHandler;
+
+    RoutesInfoData routesInfoData;
+//    private ArrayList<WayGroup> wayGroups;
+//    private String routesDataStr = "";
 
     private BroadcastReceiver serviceReceiver = null;
-
-    private SearchBusDialog searchDialog;
 
     private Dialog searchBusDialog = null;
 
@@ -87,124 +100,99 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        context = this;
-
-        // create colors array
-        Integer[] colors = {R.color.busColor1, R.color.busColor2, R.color.busColor3, R.color.busColor4, R.color.busColor5};
-        availableColors = new ArrayList<>(Arrays.asList(colors));
-        routeColors = new HashMap<>();
-        // handle list of selected buses
-        displayedBuses = new ArrayList<>(Arrays.asList(new BusListElement[0]));
-        displayedBusesAdapter = new BusListAdapter(context, displayedBuses);
-        ListView displayedBusesList = (ListView) findViewById(R.id.bus_list);
-        displayedBusesList.setAdapter(displayedBusesAdapter);
-
-        displayedBusesList.setOnItemClickListener(
-            new AdapterView.OnItemClickListener()
-          {
+        syncHandler = new Handler(new Handler.Callback() {
             @Override
-            public void onItemClick( AdapterView<?> adapterView, View view, int position, long id)
-            {
-                BusListElement elem = displayedBusesAdapter.getElem(position);
-                BusActionDialog.showDialog(context, elem.code, elem.type, elem.name);
+            public boolean handleMessage(Message msg) {
+                switch (msg.what) {
+                    case SyncService.ROUTES_SYNC_DATA_WHAT: {
+                        routesInfoData = (RoutesInfoData) msg.obj;
+                        if (routesInfoData != null) {
+                            findViewById(R.id.bus_search_btn).setVisibility(View.VISIBLE);
+                            replayDisplayed();
+                        } else {
+                            // handle error
+                        }
+                    }
                 }
+                return true;
             }
-        );
+        });
 
-        handlePermissionVerifiation(savedInstanceState);
-    }
-
-    private void handlePermissionVerifiation(Bundle savedInstanceState) {
+        context = this;
         pref = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
-        boolean askedPermissions = pref.getBoolean("asked-permissions", false);
-        SharedPreferences.Editor editor = pref.edit();
-        editor.putBoolean("asked-permissions", true);
-        editor.commit();
+        String apiKey = ensureApiKey();
+        utils = new Utils();
+        IHttpService httpService = new HttpService(apiKey);
+        storageService = new StorageService(context);
+        syncService = new SyncService(storageService, httpService, pref, utils, syncHandler);
 
-        // make sure all permissions granted
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
-                != PackageManager.PERMISSION_GRANTED
-        ) {
-            if (!askedPermissions) {
-                ActivityCompat.requestPermissions(
-            this,
-                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
-                    FINE_LOCATION_PERMISSION_GRANTED
-                );
-            }
-        } else {
-              startTrackingUser();
-        }
-
-        View warningView = findViewById(R.id.storage_warnig);
-        View mapView = findViewById(R.id.map_frame);
-
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
-                != PackageManager.PERMISSION_GRANTED
-        ) {
-            if (!askedPermissions) {
-                ActivityCompat.requestPermissions(
-                    this,
-                    new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
-                    WRITE_STORAGE_PERMISSION_GRANTED
-                );
-            } else {
-                if (warningView != null) {
-                    warningView.setVisibility(View.VISIBLE);
-                }
-                if (mapView != null) {
-                    mapView.setVisibility(View.GONE);
-                }
-            }
-        } else {
-            storageGranted = true;
-            if (warningView != null) {
-                warningView.setVisibility(View.GONE);
-            }
-            if (mapView != null) {
-                mapView.setVisibility(View.VISIBLE);
-            }
-        }
-
-        if (savedInstanceState != null) {
-            routesDataStr = savedInstanceState.getString("savedWays");
-            loadWayGrous();
-        }
-
+        boolean storageGranted = handlePermissionVerifiation(savedInstanceState);
         if (storageGranted) {
-            // storage is critical for the map
+            // storage is critical for the map and sync
             init();
         }
     }
 
-  private void loadWayGrous()
-  {
-    if (routesDataStr != null)
-    {
-      try
-      {
-        wayGroups = JSONParser.getWayGroups( new JSONObject(routesDataStr));
-      }
-      catch (JSONException err)
-      {
-      }
+//  private void loadWayGrous()
+//  {
+//    if (routesDataStr != null)
+//    {
+//      try
+//      {
+//        wayGroups = JSONParser.getWayGroups( new JSONObject(routesDataStr));
+//      }
+//      catch (JSONException err)
+//      {
+//      }
+//    }
+//  }
+
+    private String ensureApiKey() {
+        String apiKey = pref.getString(getString(R.string.pref_api_key), null);
+        if (apiKey == null) {
+            apiKey = String.valueOf(Math.random()).substring(2);
+            SharedPreferences.Editor editor = pref.edit();
+            editor.putString(getString(R.string.pref_api_key), apiKey);
+            editor.commit();
+        }
+        return apiKey;
     }
-  }
 
-  private void init() {
-//    waysLoaded = false;
+    private void init() {
+//        if (savedInstanceState != null) {
+//            routesInfoData = savedInstanceState.getO("routes-info-data");
+////          routesDataStr = savedInstanceState.getString("savedWays");
+//          loadWayGrous();
+//        }
 
-    pref = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
+        syncService.syncRoutesInfo().start();
 
-    map = new Map();
-    map.init(context, findViewById(R.id.map), pref);
+        availableColors = new ArrayList<>(Arrays.asList(colors));
+        routeColors = new HashMap<>();
 
-    startListenForService();
+        // TODO refactor into a separate UI component
+        displayedBuses = new ArrayList<>(Arrays.asList(new BusListElement[0]));
+        displayedBusesAdapter = new BusListAdapter(context, displayedBuses);
+        ListView displayedBusesList = (ListView) findViewById(R.id.bus_list);
+        displayedBusesList.setAdapter(displayedBusesAdapter);
+        displayedBusesList.setOnItemClickListener(
+                new AdapterView.OnItemClickListener()
+                {
+                    @Override
+                    public void onItemClick( AdapterView<?> adapterView, View view, int position, long id)
+                    {
+                        BusListElement elem = displayedBusesAdapter.getElem(position);
+                        BusActionDialog.showDialog(context, elem.code, elem.type, elem.name, utils);
+                    }
+                }
+        );
 
-    startService(new Intent(this, BusPositionService.class));
+        map = new Map();
+        map.init(context, findViewById(R.id.map), pref);
 
-    searchDialog = new SearchBusDialog();
-  }
+        startListenForService();
+        startService(new Intent(this, BusPositionService.class));
+    }
 
   private void startTrackingUser()
   {
@@ -261,10 +249,9 @@ public class MainActivity extends AppCompatActivity {
     }
   }
 
-  public void showSearchBusDialog(View bntView)
-  {
-    searchBusDialog = searchDialog.showDialog(context, wayGroups);
-  }
+    public void showSearchBusDialog(View bntView) {
+        searchBusDialog = new SearchBusDialog(context, routesInfoData, storageService, utils);
+    }
 
   public void selectBus(final String code, final String name, final int type, boolean zoom) {
       removeDialog();
@@ -333,35 +320,29 @@ public class MainActivity extends AppCompatActivity {
     editor.commit();
   }
 
-  private void replayDisplayed()
-  {
-    try
-    {
-      String displayed = pref.getString("displayed", "");
-      String[] codes = displayed.split("\\$");
-      for (String code : codes)
-      {
-        String codeChunks[] = code.split("\\-");
-        if (codeChunks.length == 4)
-        {
-          selectBus(code, codeChunks[3], Integer.parseInt(codeChunks[0]), false);
+    private void replayDisplayed() {
+        try {
+//      String displayed = pref.getString("displayed", "");
+//      String[] codes = displayed.split("\\$");
+//      for (String code : codes)
+//      {
+//        String codeChunks[] = code.split("\\-");
+//        if (codeChunks.length == 4)
+//        {
+//          selectBus(code, codeChunks[3], Integer.parseInt(codeChunks[0]), false);
+//        }
+//      }
+        } catch (Exception err) {
+            Log.e(LOG_TAG, "parse displayed", err);
         }
-      }
     }
-    catch (Exception err)
-    {
-      Log.e(LOG_TAG, "parse displayed", err);
-    }
-  }
 
-  private void removeDialog()
-  {
-    if (searchBusDialog != null)
-    {
-      searchBusDialog.cancel();
-      searchBusDialog = null;
+    private void removeDialog() {
+        if (searchBusDialog != null) {
+            searchBusDialog.cancel();
+            searchBusDialog = null;
+        }
     }
-  }
 
 
   private void addBusListener(final String code)
@@ -379,6 +360,16 @@ public class MainActivity extends AppCompatActivity {
     intent.putExtra("code", code);
     sendBroadcast(intent);
   }
+
+    private void showSearchBtn(RoutesInfoData routesInfoData) {
+//        map.loadStops(
+//                (HashMap<String, StopInfo>) intent.getSerializableExtra("stops"),
+//                (HashMap<String, HashSet<String>>) intent.getSerializableExtra("busStops")
+//        );
+        this.routesInfoData = routesInfoData;
+        findViewById(R.id.bus_search_btn).setVisibility(View.VISIBLE);
+        replayDisplayed();
+    }
 
 
   private void updateState(final String newStateStr)
@@ -398,6 +389,7 @@ public class MainActivity extends AppCompatActivity {
         {
           Log.e(LOG_TAG, "receive broadcast");
           String eventType = intent.getStringExtra("event");
+          /*
           if (eventType.equals(("data")))
           {
             routesDataStr = intent.getStringExtra("way-groups");
@@ -409,7 +401,9 @@ public class MainActivity extends AppCompatActivity {
             findViewById(R.id.bus_search_btn).setVisibility(View.VISIBLE);
             replayDisplayed();
           }
-          else if (eventType.equals("route"))
+          else
+          */
+              if (eventType.equals("route"))
           {
             map.updateBusRoute(intent.getStringExtra("code"),
                     (BusRoute) intent.getSerializableExtra("data"));
@@ -452,12 +446,6 @@ public class MainActivity extends AppCompatActivity {
     {
       map.saveState();
     }
-  }
-
-  @Override
-  protected void onSaveInstanceState(Bundle outState) {
-    super.onSaveInstanceState(outState);
-    outState.putString("savedWays", routesDataStr);
   }
 
   @Override
@@ -569,8 +557,61 @@ public class MainActivity extends AppCompatActivity {
     return removed;
   }
 
+    private boolean handlePermissionVerifiation(Bundle savedInstanceState) {
+        boolean storageGranted = false;
+        boolean askedPermissions = pref.getBoolean("asked-permissions", false);
+        SharedPreferences.Editor editor = pref.edit();
+        editor.putBoolean("asked-permissions", true);
+        editor.commit();
 
-  // permissions handling
+        // make sure all permissions granted
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED
+                ) {
+            if (!askedPermissions) {
+                ActivityCompat.requestPermissions(
+                        this,
+                        new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                        FINE_LOCATION_PERMISSION_GRANTED
+                );
+            }
+        } else {
+            startTrackingUser();
+        }
+
+        View warningView = findViewById(R.id.storage_warnig);
+        View mapView = findViewById(R.id.map_frame);
+
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                != PackageManager.PERMISSION_GRANTED
+                ) {
+            if (!askedPermissions) {
+                ActivityCompat.requestPermissions(
+                        this,
+                        new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
+                        WRITE_STORAGE_PERMISSION_GRANTED
+                );
+            } else {
+                if (warningView != null) {
+                    warningView.setVisibility(View.VISIBLE);
+                }
+                if (mapView != null) {
+                    mapView.setVisibility(View.GONE);
+                }
+            }
+        } else {
+            storageGranted = true;
+            if (warningView != null) {
+                warningView.setVisibility(View.GONE);
+            }
+            if (mapView != null) {
+                mapView.setVisibility(View.VISIBLE);
+            }
+        }
+
+        return storageGranted;
+    }
+
     @Override
     public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
         switch (requestCode) {
@@ -589,7 +630,6 @@ public class MainActivity extends AppCompatActivity {
                     View warningView = findViewById(R.id.storage_warnig);
                     View mapView = findViewById(R.id.map_frame);
                     if (grantResults[0] == 0) {
-                        storageGranted = true;
                         Intent intent = getIntent();
                         finish();
 
