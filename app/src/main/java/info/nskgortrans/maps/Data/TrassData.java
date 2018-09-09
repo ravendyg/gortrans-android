@@ -21,11 +21,11 @@ public class TrassData implements Serializable {
                 JSONObject wayPoint = input.getJSONObject(i);
                 double lat = wayPoint.getDouble("t");
                 double lng = wayPoint.getDouble("g");
-                String name = wayPoint.getString("n");
-                int id = wayPoint.getInt("i");
                 WayPointData wayPointData = new WayPointData(lat, lng);
                 waypoints.add(wayPointData);
-                if (name != null) {
+                if (wayPoint.has("n") && wayPoint.has("i")) {
+                    String name = wayPoint.getString("n");
+                    int id = wayPoint.getInt("i");
                     StopData stopData = new StopData(id, name, wayPointData);
                     stops.add(stopData);
                 }

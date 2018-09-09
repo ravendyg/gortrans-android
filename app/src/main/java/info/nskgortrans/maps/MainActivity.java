@@ -36,6 +36,7 @@ import java.util.HashSet;
 
 import info.nskgortrans.maps.Adapters.BusListAdapter;
 import info.nskgortrans.maps.Data.BusListElementData;
+import info.nskgortrans.maps.Data.TrassData;
 import info.nskgortrans.maps.DataClasses.BusRoute;
 import info.nskgortrans.maps.Data.RoutesInfoData;
 import info.nskgortrans.maps.DataClasses.StopInfo;
@@ -113,6 +114,14 @@ public class MainActivity extends AppCompatActivity {
                     }
 
                     case  SyncService.TRASS_SYNC_DATA_WHAT: {
+                        TrassData trassData = (TrassData) msg.obj;
+                        for (BusListElementData displayedBus : displayedBuses) {
+                            String code = trassData.getCode();
+                            if (displayedBus.getCode().equals(code)) {
+                                map.upsertBusMain(displayedBus, trassData);
+                                break;
+                            }
+                        }
                         break;
                     }
                 }
@@ -400,13 +409,6 @@ public class MainActivity extends AppCompatActivity {
           {
             updateState(intent.getStringExtra("new-state"));
           }
-          else if (eventType.equals("points"))
-          {
-            String busCode = intent.getStringExtra("busCode");
-            ArrayList<GeoPoint> points = (ArrayList<GeoPoint>) intent.getSerializableExtra("points");
-            String color = routeColors.get(busCode);
-            map.addPolyline(busCode, points, color);
-          }
           else if (eventType.equals("bus-update"))
           {
             HashMap<String, UpdateParcel> parcels =
@@ -507,15 +509,13 @@ public class MainActivity extends AppCompatActivity {
   }
 
     private void addBus(final WayData wayData, int color, int icon, boolean zoom) {
-        BusListElementData busListElement = new BusListElementData(wayData, icon, color);
+        BusListElementData busListElement = new BusListElementData(wayData, icon, color, zoom);
         String code = busListElement.getCode();
         routeColors.put(code, "" + color);
         displayedBuses.add(busListElement);
         displayedBusesAdapter.notifyDataSetChanged();
 
-//        addBusListener(code);
-
-//        map.addBus(code, color, zoom);
+        addBusListener(code);
     }
 
   private void addBusToMap(String code)

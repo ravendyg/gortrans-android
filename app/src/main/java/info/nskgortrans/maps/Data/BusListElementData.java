@@ -11,14 +11,16 @@ public class BusListElementData {
     private String name;
     private String code;
     private int type;
+    private boolean zoom;
 
-    public BusListElementData(final WayData wayData, final int icon, final int color) {
+    public BusListElementData(final WayData wayData, final int icon, final int color, final boolean zoom) {
         this.wayData = wayData;
         this.color = color;
         this.icon = icon;
         this.name = wayData.getName();
         this.code = wayData.getCode();
         this.type = wayData.getType();
+        this.zoom = zoom;
     }
 
     public String getName() {
@@ -39,5 +41,13 @@ public class BusListElementData {
 
     public int getColor() {
         return this.color;
+    }
+
+    public boolean isZoom() {
+        return zoom;
+    }
+
+    public void disableZoom() {
+        this.zoom = false;
     }
 }

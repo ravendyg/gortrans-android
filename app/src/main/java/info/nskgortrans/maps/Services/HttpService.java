@@ -66,8 +66,8 @@ public class HttpService implements IHttpService {
         try {
             connection = (HttpURLConnection) url.openConnection();
             connection.setRequestMethod("GET");
-            connection.setConnectTimeout(5000);
-            connection.setReadTimeout(5000);
+            connection.setConnectTimeout(20000);
+            connection.setReadTimeout(20000);
             connection.connect();
 
             InputStream input = connection.getInputStream();
