@@ -7,15 +7,10 @@ package info.nskgortrans.maps;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.graphics.Canvas;
-import android.graphics.Color;
-import android.graphics.Paint;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.location.Location;
 import android.support.v4.content.ContextCompat;
-import android.support.v4.content.IntentCompat;
 import android.util.Log;
 import android.view.View;
 
@@ -29,7 +24,6 @@ import org.osmdroid.util.BoundingBox;
 import org.osmdroid.util.GeoPoint;
 import org.osmdroid.views.MapView;
 import org.osmdroid.views.Projection;
-import org.osmdroid.views.overlay.ItemizedOverlay;
 import org.osmdroid.views.overlay.Marker;
 import org.osmdroid.views.overlay.Overlay;
 import org.osmdroid.views.overlay.Polyline;
@@ -40,7 +34,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Set;
 
 import info.nskgortrans.maps.DataClasses.BusInfo;
 import info.nskgortrans.maps.DataClasses.BusRoute;
@@ -68,7 +61,7 @@ public class Map
   private String nextToZoomOn;
 
   // data
-  private HashMap<String, StopInfo> stops;
+  private HashMap<String, StopInfo> stopsData;
   private HashMap<String, HashSet<String>> busStops = new HashMap<>();
   private HashMap<String, BusRoute> busRoutes = new HashMap<>();
   // stop markers on the map with corresponding routes counter
@@ -139,16 +132,16 @@ public class Map
   }
 
     public void loadStops(
-        HashMap<String, StopInfo> stops,
+        HashMap<String, StopInfo> stopsData,
         HashMap<String, HashSet<String>> busStops
     ) {
-        if (stops == null) {
-            stops = new HashMap<>();
+        if (stopsData == null) {
+            stopsData = new HashMap<>();
         }
         if (busStops == null) {
             busStops = new HashMap<>();
         }
-        this.stops = stops;
+        this.stopsData = stopsData;
         this.busStops = busStops;
     }
 
@@ -209,26 +202,19 @@ public class Map
   }
 
 
-  public void addBus(final String code, int color, boolean zoom)
-  {
-    if (zoom)
-    {
-      nextToZoomOn = code;
+public void addBus(final String code, int color, boolean zoom) {
+    if (zoom) {
+        nextToZoomOn = code;
     }
-
-    if (hasPolyline(code))
-    {
-      Polyline poly = busRoutesOnMap.get(code);
-      poly.setColor(color);
-      colorsMap.put(code, "" + color);
+    Polyline poly = busRoutesOnMap.get(code);
+    if (poly != null) {
+        poly.setColor(color);
+        colorsMap.put(code, "" + color);
     }
-
     addBusStops(code);
-
     tryToZoom();
-
     map.invalidate();
-  }
+}
 
   public void updateBusRoute(final String code, final BusRoute route)
   {
@@ -329,13 +315,18 @@ public class Map
   }
 
     private void addBusStops(final String code) {
-        for (String id : busStops.get(code)) {
+        HashSet<String> stops = busStops.get(code);
+        if (stops == null) {
+            return;
+        }
+
+        for (String id : stops) {
             if (stopsOnMap.containsKey(id)) {
                 stopsOnMap.get(id).addBus(code);
             } else {
                 stopsOnMap.put(
                         id,
-                        new StopMarker(stopMarkerFactory(stops.get(id)), code)
+                        new StopMarker(stopMarkerFactory(stopsData.get(id)), code)
                 );
             }
         }
@@ -403,38 +394,34 @@ public class Map
     }
   }
 
-  private void removeBusStops(final String code)
-  {
-    boolean closed = false;
-    Iterator<String> stopIds = busStops.get(code).iterator();
-    while (stopIds.hasNext())
-    {
-      String id = stopIds.next();
-      if (stopsOnMap.containsKey(id))
-      {
-        StopMarker temp = stopsOnMap.get(id);
-        if (!closed)
-        {
-          // since right now it's a bit of problem to detect where popup opened always close
-          InfoWindow wn = temp.getMarker().getInfoWindow();
-          if (wn.isOpen())
-          {
-            wn.close();
-          }
-          closed = true;
+    private void removeBusStops(final String code) {
+        boolean closed = false;
+        HashSet<String > stops = busStops.get(code);
+        if (stops == null) {
+            return;
         }
-        int left = temp.removeBus(code);
-        if (left == 0)
-        {
-          Marker mr = temp.getMarker();
-          mr.remove(map);
-          stopsOnMap.remove(id);
+        for (String stopId : stops) {
+            if (stopsOnMap.containsKey(stopId)) {
+                StopMarker temp = stopsOnMap.get(stopId);
+                if (!closed) {
+                    // since right now it's a bit of problem to detect where popup opened always close
+                    InfoWindow wn = temp.getMarker().getInfoWindow();
+                    if (wn.isOpen()) {
+                        wn.close();
+                    }
+                    closed = true;
+                }
+                int left = temp.removeBus(code);
+                if (left == 0) {
+                    Marker mr = temp.getMarker();
+                    mr.remove(map);
+                    stopsOnMap.remove(stopId);
+                }
+            }
         }
-      }
-    }
 
-    removeBusesByRoute(code);
-  }
+        removeBusesByRoute(code);
+    }
 
 
   private void hideUserInfo()

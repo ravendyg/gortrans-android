@@ -4,8 +4,7 @@ import android.content.SharedPreferences;
 import android.os.Handler;
 import android.os.Message;
 
-import info.nskgortrans.maps.Constants;
-import info.nskgortrans.maps.DataClasses.RoutesInfoData;
+import info.nskgortrans.maps.Data.RoutesInfoData;
 import info.nskgortrans.maps.Utils;
 
 public class SyncService implements ISyncService {
@@ -55,6 +54,17 @@ public class SyncService implements ISyncService {
                     Message message = handler.obtainMessage(ROUTES_SYNC_DATA_WHAT, routesInfoData);
                     handler.sendMessage(message);
                 }
+            }
+        });
+    }
+
+    @Override
+    public Thread syncBusStops(String code) {
+        return (new Thread() {
+            @Override
+            public void run() {
+                long timestamp = utils.getUnixTsp();
+
             }
         });
     }

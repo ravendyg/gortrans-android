@@ -1,8 +1,5 @@
 package info.nskgortrans.maps.Services;
 
-import android.content.SharedPreferences;
-
-import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
@@ -11,8 +8,7 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
-import info.nskgortrans.maps.DataClasses.RoutesInfoData;
-import info.nskgortrans.maps.R;
+import info.nskgortrans.maps.Data.RoutesInfoData;
 
 public class HttpService implements IHttpService {
     private static final String BASE_URL = "http://192.168.1.67:3023";

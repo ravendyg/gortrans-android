@@ -1,10 +1,7 @@
 package info.nskgortrans.maps.Services;
 
-import java.util.ArrayList;
-
-import info.nskgortrans.maps.DataClasses.HistoryData;
-import info.nskgortrans.maps.DataClasses.RoutesInfoData;
-import info.nskgortrans.maps.DataClasses.WayData;
+import info.nskgortrans.maps.Data.HistoryData;
+import info.nskgortrans.maps.Data.RoutesInfoData;
 
 public interface IStorageService {
     RoutesInfoData getRoutesInfo();

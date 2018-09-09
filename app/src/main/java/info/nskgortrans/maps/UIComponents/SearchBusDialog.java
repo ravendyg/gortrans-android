@@ -8,7 +8,6 @@ import android.graphics.drawable.ColorDrawable;
 import android.preference.PreferenceManager;
 import android.text.Editable;
 import android.text.TextWatcher;
-import android.util.Log;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
@@ -22,19 +21,12 @@ import android.os.Handler;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Set;
 
 import info.nskgortrans.maps.Adapters.WaysAdapter;
-import info.nskgortrans.maps.Constants;
-import info.nskgortrans.maps.DataClasses.HistoryData;
-import info.nskgortrans.maps.DataClasses.RoutesInfoData;
-import info.nskgortrans.maps.DataClasses.Way;
+import info.nskgortrans.maps.Data.HistoryData;
+import info.nskgortrans.maps.Data.RoutesInfoData;
 import info.nskgortrans.maps.DataClasses.WayData;
-import info.nskgortrans.maps.DataClasses.WayGroup;
-import info.nskgortrans.maps.DataClasses.WayGroupElement;
-import info.nskgortrans.maps.DataClasses.Ways;
 import info.nskgortrans.maps.MainActivity;
 import info.nskgortrans.maps.R;
 import info.nskgortrans.maps.Services.IStorageService;
@@ -73,6 +65,7 @@ public class SearchBusDialog extends Dialog {
         super(context);
 
         this.context = context;
+        this.routesInfoData = routesInfoData;
         this.storageService = storageService;
         this.utils = utils;
 
@@ -87,8 +80,6 @@ public class SearchBusDialog extends Dialog {
         );
         show();
 
-        drawMenu();
-
         adapter = new WaysAdapter(context, result);
         ListView list = (ListView) findViewById(R.id.wayGroups);
         list.setAdapter(adapter);
@@ -99,6 +90,8 @@ public class SearchBusDialog extends Dialog {
         query = searchInput.getText().toString();
 
         getHistory();
+
+        drawMenu();
 
         searchInput.addTextChangedListener(
             new TextWatcher() {
@@ -138,7 +131,7 @@ public class SearchBusDialog extends Dialog {
             new Handler().postDelayed(new Runnable() {
                     @Override
                     public void run() {
-                        ((MainActivity) context).selectBus(elem.getCode(), elem.getName(), elem.getType(), true);
+                        ((MainActivity) context).selectBus(elem, true);
                     }
                 },
                 100
@@ -147,6 +140,7 @@ public class SearchBusDialog extends Dialog {
         });
 
         updateBars();
+        filterSearchResults();
     }
 
     private void drawMenu() {
@@ -197,7 +191,6 @@ public class SearchBusDialog extends Dialog {
                 bar.setBackgroundColor(context.getResources().getColor(R.color.unselectedSearchIcon));
             }
         }
-        filterSearchResults();
     }
 
     private void filterSearchResults() {

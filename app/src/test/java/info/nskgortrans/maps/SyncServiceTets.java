@@ -2,18 +2,12 @@ package info.nskgortrans.maps;
 
 import android.content.SharedPreferences;
 import android.os.Handler;
-import android.os.Message;
 
 import org.json.JSONArray;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
-import org.mockito.Mockito;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
-import java.lang.reflect.InvocationHandler;
-
-import info.nskgortrans.maps.DataClasses.RoutesInfoData;
+import info.nskgortrans.maps.Data.RoutesInfoData;
 import info.nskgortrans.maps.Services.HttpService;
 import info.nskgortrans.maps.Services.IHttpService;
 import info.nskgortrans.maps.Services.IStorageService;
@@ -23,7 +17,6 @@ import info.nskgortrans.maps.Services.SyncService;
 
 import static junit.framework.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
-import static org.mockito.Matchers.anyObject;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;

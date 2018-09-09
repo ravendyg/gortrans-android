@@ -1,4 +1,4 @@
-package info.nskgortrans.maps.DataClasses;
+package info.nskgortrans.maps.Data;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 
 import info.nskgortrans.maps.Constants;
+import info.nskgortrans.maps.DataClasses.WayData;
 
 public class RoutesInfoData implements Serializable {
     private Map<Integer, List<WayData>> routes;

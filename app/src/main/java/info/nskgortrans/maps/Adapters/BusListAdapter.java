@@ -15,34 +15,11 @@ import android.widget.TextView;
 
 import java.util.ArrayList;
 
-import info.nskgortrans.maps.DataClasses.BusListElement;
-import info.nskgortrans.maps.DataClasses.WayGroupElement;
-import info.nskgortrans.maps.DataClasses.Ways;
+import info.nskgortrans.maps.Data.BusListElementData;
 import info.nskgortrans.maps.R;
 
 //package info.nskgortrans.maps.Adapters;
 
-import android.content.Context;
-import android.util.Log;
-import android.view.LayoutInflater;
-import android.view.View;
-import android.view.ViewGroup;
-import android.widget.BaseAdapter;
-import android.widget.ImageView;
-import android.widget.TextView;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-
-import info.nskgortrans.maps.DataClasses.Way;
-import info.nskgortrans.maps.DataClasses.WayGroup;
-import info.nskgortrans.maps.DataClasses.WayGroupElement;
-import info.nskgortrans.maps.DataClasses.Ways;
-import info.nskgortrans.maps.R;
-
-import static android.R.attr.data;
-import static android.R.attr.name;
-import static android.R.attr.type;
 
 /**
  * Created by me on 4/12/16.
@@ -52,9 +29,9 @@ public class BusListAdapter extends BaseAdapter
 {
   private Context ctx;
   private LayoutInflater inflater;
-  private ArrayList<BusListElement> data;
+  private ArrayList<BusListElementData> data;
 
-  public BusListAdapter(Context context, ArrayList<BusListElement> _data)
+  public BusListAdapter(Context context, ArrayList<BusListElementData> _data)
   {
     ctx = context;
     data = _data;
@@ -73,9 +50,9 @@ public class BusListAdapter extends BaseAdapter
     return data.get(position);
   }
 
-  public BusListElement getElem(int position)
+  public BusListElementData getElem(int position)
   {
-    return (BusListElement) getItem(position);
+    return (BusListElementData) getItem(position);
   }
 
   @Override
@@ -89,14 +66,14 @@ public class BusListAdapter extends BaseAdapter
   {
     View view = _view;
 
-    BusListElement element = getElem(position);
+    BusListElementData element = getElem(position);
 
     view = inflater.inflate(R.layout.bus_list_item, parent, false);
     TextView name = (TextView) view.findViewById(R.id.busName);
-    name.setText(element.name);
-    name.setTextColor(ContextCompat.getColor(ctx, element.color));
+    name.setText(element.getName());
+    name.setTextColor(ContextCompat.getColor(ctx, element.getColor()));
     ImageView icon = (ImageView) view.findViewById(R.id.busIcon);
-    icon.setImageResource(element.icon);
+    icon.setImageResource(element.getIcon());
 
     return view;
   }

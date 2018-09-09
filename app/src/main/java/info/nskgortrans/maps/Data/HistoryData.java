@@ -1,11 +1,14 @@
-package info.nskgortrans.maps.DataClasses;
+package info.nskgortrans.maps.Data;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 
+import info.nskgortrans.maps.DataClasses.Way;
+import info.nskgortrans.maps.DataClasses.WayData;
 import info.nskgortrans.maps.Utils;
 
-public class HistoryData {
+public class HistoryData implements Serializable {
     final static int HISTORY_SIZE = 5;
     private ArrayList<WayData>[] history;
 

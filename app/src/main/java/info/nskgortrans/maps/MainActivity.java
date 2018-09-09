@@ -27,8 +27,6 @@ import android.widget.AdapterView;
 import android.widget.ListView;
 
 
-import org.json.JSONException;
-import org.json.JSONObject;
 import org.osmdroid.util.GeoPoint;
 
 import java.util.ArrayList;
@@ -37,12 +35,12 @@ import java.util.HashMap;
 import java.util.HashSet;
 
 import info.nskgortrans.maps.Adapters.BusListAdapter;
-import info.nskgortrans.maps.DataClasses.BusListElement;
+import info.nskgortrans.maps.Data.BusListElementData;
 import info.nskgortrans.maps.DataClasses.BusRoute;
-import info.nskgortrans.maps.DataClasses.RoutesInfoData;
+import info.nskgortrans.maps.Data.RoutesInfoData;
 import info.nskgortrans.maps.DataClasses.StopInfo;
 import info.nskgortrans.maps.DataClasses.UpdateParcel;
-import info.nskgortrans.maps.DataClasses.WayGroup;
+import info.nskgortrans.maps.DataClasses.WayData;
 import info.nskgortrans.maps.Services.BusPositionService;
 import info.nskgortrans.maps.Services.HttpService;
 import info.nskgortrans.maps.Services.IHttpService;
@@ -87,7 +85,7 @@ public class MainActivity extends AppCompatActivity {
     private boolean userFound = false;
 
     private ArrayList<Integer> availableColors;
-    private ArrayList<BusListElement> displayedBuses;
+    private ArrayList<BusListElementData> displayedBuses;
     private BusListAdapter displayedBusesAdapter;
 
     private HashMap<String, String> routeColors;
@@ -133,20 +131,6 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-//  private void loadWayGrous()
-//  {
-//    if (routesDataStr != null)
-//    {
-//      try
-//      {
-//        wayGroups = JSONParser.getWayGroups( new JSONObject(routesDataStr));
-//      }
-//      catch (JSONException err)
-//      {
-//      }
-//    }
-//  }
-
     private String ensureApiKey() {
         String apiKey = pref.getString(getString(R.string.pref_api_key), null);
         if (apiKey == null) {
@@ -159,19 +143,13 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void init() {
-//        if (savedInstanceState != null) {
-//            routesInfoData = savedInstanceState.getO("routes-info-data");
-////          routesDataStr = savedInstanceState.getString("savedWays");
-//          loadWayGrous();
-//        }
-
         syncService.syncRoutesInfo().start();
 
         availableColors = new ArrayList<>(Arrays.asList(colors));
         routeColors = new HashMap<>();
 
         // TODO refactor into a separate UI component
-        displayedBuses = new ArrayList<>(Arrays.asList(new BusListElement[0]));
+        displayedBuses = new ArrayList<>(Arrays.asList(new BusListElementData[0]));
         displayedBusesAdapter = new BusListAdapter(context, displayedBuses);
         ListView displayedBusesList = (ListView) findViewById(R.id.bus_list);
         displayedBusesList.setAdapter(displayedBusesAdapter);
@@ -181,8 +159,8 @@ public class MainActivity extends AppCompatActivity {
                     @Override
                     public void onItemClick( AdapterView<?> adapterView, View view, int position, long id)
                     {
-                        BusListElement elem = displayedBusesAdapter.getElem(position);
-                        BusActionDialog.showDialog(context, elem.code, elem.type, elem.name, utils);
+                        BusListElementData elem = displayedBusesAdapter.getElem(position);
+                        BusActionDialog.showDialog(context, elem, utils);
                     }
                 }
         );
@@ -253,49 +231,53 @@ public class MainActivity extends AppCompatActivity {
         searchBusDialog = new SearchBusDialog(context, routesInfoData, storageService, utils);
     }
 
-  public void selectBus(final String code, final String name, final int type, boolean zoom) {
-      removeDialog();
-      Log.e("bus code: ", code);
+    public void selectBus(final WayData wayData, final boolean zoom) {
+        removeDialog();
 
-      // check for dupes
-      for (int i = 0; i < displayedBuses.size(); i++) {
-          if (displayedBuses.get(i).code.equals(code)) {
-              return;
-          }
-      }
+        String code = wayData.getCode();
 
-      int newColor, icon;
-      int size = availableColors.size();
-      if (size > 0) {
-          newColor = availableColors.get(size - 1);
-          availableColors.remove(size - 1);
-      } else { // remove the oldest one
-           removeBus(displayedBuses.get(0).code);
-           // and use it's color
-           newColor = availableColors.get(0);
-      }
+        // check for dupes
+        for (int i = 0; i < displayedBuses.size(); i++) {
+            if (displayedBuses.get(i).getCode().equals(code)) {
+                return;
+            }
+        }
 
-      // select icon
-      switch (type) {
-          case 1:
-              icon = R.drawable.bus;
-              break;
-          case 2:
-              icon = R.drawable.trolley;
-              break;
-          case 3:
-              icon = R.drawable.tram;
-              break;
-          default:
-              icon = R.drawable.minibus;
-      }
+        int newColor, icon;
+        int size = availableColors.size();
+        if (size > 0) {
+            newColor = availableColors.get(size - 1);
+            availableColors.remove(size - 1);
+        } else { // remove the oldest one
+            removeBus(displayedBuses.get(0).getCode());
+            // and use it's color
+            newColor = availableColors.get(0);
+        }
 
-      addBus(code, name, newColor, icon, type, zoom);
+        // select icon
+        switch (wayData.getType()) {
+            case 1:
+                icon = R.drawable.bus;
+            break;
 
-      if (zoom) {
-          storeDisplayed();
-      }
-  }
+            case 2:
+                icon = R.drawable.trolley;
+            break;
+
+            case 3:
+                icon = R.drawable.tram;
+            break;
+
+            default:
+                icon = R.drawable.minibus;
+        }
+
+        addBus(wayData, newColor, icon, zoom);
+
+        if (zoom) {
+            storeDisplayed();
+        }
+    }
 
   public void removeBus(final String code) {
     freeBusResources(code);
@@ -309,16 +291,15 @@ public class MainActivity extends AppCompatActivity {
     map.zoomToRoute(code);
   }
 
-  private void storeDisplayed() {
-    SharedPreferences.Editor editor = pref.edit();
-    String displayed = "";
-    for (BusListElement el: displayedBuses)
-    {
-      displayed += el.code + "$";
+    private void storeDisplayed() {
+        SharedPreferences.Editor editor = pref.edit();
+        String displayed = "";
+        for (BusListElementData el: displayedBuses) {
+            displayed += el.getCode() + "$";
+        }
+        editor.putString("displayed", displayed);
+        editor.commit();
     }
-    editor.putString("displayed", displayed);
-    editor.commit();
-  }
 
     private void replayDisplayed() {
         try {
@@ -518,16 +499,17 @@ public class MainActivity extends AppCompatActivity {
     sendBroadcast(intent);
   }
 
-  private void addBus(String code, String name, int color, int icon, int type, boolean zoom)
-  {
-    routeColors.put(code, "" + color);
-    displayedBuses.add(new BusListElement(name, code, color, icon, type));
-    displayedBusesAdapter.notifyDataSetChanged();
+    private void addBus(final WayData wayData, int color, int icon, boolean zoom) {
+        BusListElementData busListElement = new BusListElementData(wayData, icon, color);
+        String code = busListElement.getCode();
+        routeColors.put(code, "" + color);
+        displayedBuses.add(busListElement);
+        displayedBusesAdapter.notifyDataSetChanged();
 
-    addBusListener(code);
-
-    map.addBus(code, color, zoom);
-  }
+//        addBusListener(code);
+//
+        map.addBus(code, color, zoom);
+    }
 
   private void addBusToMap(String code)
   {
@@ -538,24 +520,21 @@ public class MainActivity extends AppCompatActivity {
   {
   }
 
-  private boolean freeBusResources(String code)
-  {
-    removeBusListener(code);
+    private boolean freeBusResources(String code) {
+        removeBusListener(code);
 
-    boolean removed = false;
-    for (int i = 0; i < displayedBuses.size(); i++)
-    {
-      BusListElement temp = displayedBuses.get(i);
-      if (temp.code.equals(code))
-      {
-        availableColors.add(temp.color);
-        displayedBuses.remove(i);
-        removed = true;
-        break;
-      }
+        boolean removed = false;
+        for (int i = 0; i < displayedBuses.size(); i++) {
+            BusListElementData temp = displayedBuses.get(i);
+            if (temp.getCode().equals(code)) {
+                availableColors.add(temp.getColor());
+                displayedBuses.remove(i);
+                removed = true;
+                break;
+            }
+        }
+        return removed;
     }
-    return removed;
-  }
 
     private boolean handlePermissionVerifiation(Bundle savedInstanceState) {
         boolean storageGranted = false;

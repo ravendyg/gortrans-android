@@ -4,23 +4,16 @@ import android.content.Context;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.Closeable;
-import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.ObjectInput;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutput;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
-import java.util.ArrayList;
-import java.util.Arrays;
 
-import info.nskgortrans.maps.DataClasses.HistoryData;
-import info.nskgortrans.maps.DataClasses.RoutesInfoData;
-import info.nskgortrans.maps.DataClasses.Way;
-import info.nskgortrans.maps.DataClasses.WayData;
+import info.nskgortrans.maps.Data.HistoryData;
+import info.nskgortrans.maps.Data.RoutesInfoData;
 
 public class StorageService implements IStorageService {
     public static final String ROUTES_INFO_FILE_NAME = "routes_info";
@@ -50,12 +43,16 @@ public class StorageService implements IStorageService {
     @Override
     public HistoryData getSearchHistory() {
         Object data = getData(SEARCH_HISTORY_FILE);
+        HistoryData historyData = null;
         try {
-            return (HistoryData) data;
+            historyData = (HistoryData) data;
         } catch (Exception e) {
             e.printStackTrace();
-            return new HistoryData();
         }
+        if (historyData == null) {
+            historyData = new HistoryData();
+        }
+        return historyData;
     }
 
     @Override
