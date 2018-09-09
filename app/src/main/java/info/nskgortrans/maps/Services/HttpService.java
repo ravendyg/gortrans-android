@@ -8,6 +8,7 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
+import info.nskgortrans.maps.Data.TrassData;
 import info.nskgortrans.maps.Data.RoutesInfoData;
 
 public class HttpService implements IHttpService {
@@ -19,7 +20,7 @@ public class HttpService implements IHttpService {
     }
 
     @Override
-    public RoutesInfoData getRoutesInfo(long tsp) {
+    public RoutesInfoData getRoutesInfo(final long tsp) {
         RoutesInfoData routesInfoData = null;
         try {
             URL url = new URL(BASE_URL + "/v2/sync/routes"
@@ -35,6 +36,26 @@ public class HttpService implements IHttpService {
         }
 
         return routesInfoData;
+    }
+
+    @Override
+    public TrassData getTrassData(final String code, final long tsp) {
+        TrassData trassData = null;
+        try {
+            URL url = new URL(BASE_URL + "/v2/sync/trass/"
+                    + code
+                    + "?tsp=" + tsp
+                    + "&api_key=" + apiKey
+            );
+            JSONObject trassDataJson = loadData(url);
+            if (trassDataJson != null) {
+                trassData = new TrassData(code, trassDataJson.getJSONArray("data"));
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return trassData;
     }
 
     private JSONObject loadData(URL url) {

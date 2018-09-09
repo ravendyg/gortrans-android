@@ -40,7 +40,7 @@ import info.nskgortrans.maps.DataClasses.BusRoute;
 import info.nskgortrans.maps.Data.RoutesInfoData;
 import info.nskgortrans.maps.DataClasses.StopInfo;
 import info.nskgortrans.maps.DataClasses.UpdateParcel;
-import info.nskgortrans.maps.DataClasses.WayData;
+import info.nskgortrans.maps.Data.WayData;
 import info.nskgortrans.maps.Services.BusPositionService;
 import info.nskgortrans.maps.Services.HttpService;
 import info.nskgortrans.maps.Services.IHttpService;
@@ -104,12 +104,16 @@ public class MainActivity extends AppCompatActivity {
                 switch (msg.what) {
                     case SyncService.ROUTES_SYNC_DATA_WHAT: {
                         routesInfoData = (RoutesInfoData) msg.obj;
+                        // TODO: handle different loading source and live update
                         if (routesInfoData != null) {
                             findViewById(R.id.bus_search_btn).setVisibility(View.VISIBLE);
                             replayDisplayed();
-                        } else {
-                            // handle error
                         }
+                        break;
+                    }
+
+                    case  SyncService.TRASS_SYNC_DATA_WHAT: {
+                        break;
                     }
                 }
                 return true;
@@ -273,6 +277,10 @@ public class MainActivity extends AppCompatActivity {
         }
 
         addBus(wayData, newColor, icon, zoom);
+        Thread trassSyncThread = syncService.syncTrassInfo(wayData.getCode());
+        if (trassSyncThread != null) {
+            trassSyncThread.start();
+        }
 
         if (zoom) {
             storeDisplayed();
@@ -325,14 +333,13 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-
-  private void addBusListener(final String code)
-  {
-    Intent intent = new Intent("info.nskgortrans.maps.gortrans.bus-service");
-    intent.putExtra("event", "add-bus-listener");
-    intent.putExtra("code", code);
-    sendBroadcast(intent);
-  }
+    // TODO: use a WS client running in a thread, not in a service
+    private void addBusListener(final String code) {
+        Intent intent = new Intent("info.nskgortrans.maps.gortrans.bus-service");
+        intent.putExtra("event", "add-bus-listener");
+        intent.putExtra("code", code);
+        sendBroadcast(intent);
+    }
 
   private void removeBusListener(final String code)
   {
@@ -507,8 +514,8 @@ public class MainActivity extends AppCompatActivity {
         displayedBusesAdapter.notifyDataSetChanged();
 
 //        addBusListener(code);
-//
-        map.addBus(code, color, zoom);
+
+//        map.addBus(code, color, zoom);
     }
 
   private void addBusToMap(String code)

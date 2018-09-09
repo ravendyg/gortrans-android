@@ -1,20 +1,31 @@
 package info.nskgortrans.maps.Data;
 
-public class StopData extends WayPointData {
-    private String id;
-    private String name;
+import java.io.Serializable;
 
-    public StopData(String id, String name, double lat, double lng) {
-        super(lat, lng);
+public class StopData implements Serializable {
+    private int id;
+    private String name;
+    private WayPointData wayPointData;
+
+    public StopData(int id, String name, WayPointData wayPointData) {
         this.id = id;
         this.name = name;
+        this.wayPointData = wayPointData;
     }
 
-    public String getId() {
+    public int getId() {
         return id;
     }
 
     public String getName() {
         return name;
+    }
+
+    public double getLat() {
+        return wayPointData.getLat();
+    }
+
+    public double getLng() {
+        return wayPointData.getLng();
     }
 }

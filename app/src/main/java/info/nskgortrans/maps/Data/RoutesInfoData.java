@@ -10,7 +10,6 @@ import java.util.List;
 import java.util.Map;
 
 import info.nskgortrans.maps.Constants;
-import info.nskgortrans.maps.DataClasses.WayData;
 
 public class RoutesInfoData implements Serializable {
     private Map<Integer, List<WayData>> routes;

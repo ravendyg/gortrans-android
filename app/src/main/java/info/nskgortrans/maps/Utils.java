@@ -1,6 +1,6 @@
 package info.nskgortrans.maps;
 
-import info.nskgortrans.maps.DataClasses.WayData;
+import info.nskgortrans.maps.Data.WayData;
 
 /**
  * Created by me on 22/01/17.

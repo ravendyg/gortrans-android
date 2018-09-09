@@ -13,7 +13,7 @@ public class StopInfo implements Serializable {
         this.buses = new HashSet<>();
     }
 
-    public String getId() {
+    public int getId() {
         return stopData.getId();
     }
 

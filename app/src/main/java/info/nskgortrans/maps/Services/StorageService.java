@@ -14,15 +14,32 @@ import java.io.OutputStream;
 
 import info.nskgortrans.maps.Data.HistoryData;
 import info.nskgortrans.maps.Data.RoutesInfoData;
+import info.nskgortrans.maps.Data.TrassData;
 
 public class StorageService implements IStorageService {
     public static final String ROUTES_INFO_FILE_NAME = "routes_info";
+    public static final String TRASS_DATA_FILE_NAME = "trass_data";
     public static final String SEARCH_HISTORY_FILE = "search_history";
 
     public final Context ctx;
 
     public StorageService(Context ctx) {
         this.ctx = ctx;
+    }
+
+    @Override
+    public TrassData getTrassData(String code) {
+        Object data = getData(TRASS_DATA_FILE_NAME + code);
+        if (data != null) {
+            return (TrassData) data;
+        } else {
+            return null;
+        }
+    }
+
+    @Override
+    public void setTrassData(TrassData trassData) {
+        saveObjectToDisk(TRASS_DATA_FILE_NAME + trassData.getCode(), trassData);
     }
 
     @Override

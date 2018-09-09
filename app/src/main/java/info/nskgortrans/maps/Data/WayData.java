@@ -1,4 +1,4 @@
-package info.nskgortrans.maps.DataClasses;
+package info.nskgortrans.maps.Data;
 
 import org.json.JSONException;
 import org.json.JSONObject;
