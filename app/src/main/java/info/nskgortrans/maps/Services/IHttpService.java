@@ -4,6 +4,6 @@ import info.nskgortrans.maps.Data.TrassData;
 import info.nskgortrans.maps.Data.RoutesInfoData;
 
 public interface IHttpService {
-    RoutesInfoData getRoutesInfo(long tsp);
+    RoutesInfoData getRoutesInfo(String hash);
     TrassData getTrassData(String code, long tsp);
 }

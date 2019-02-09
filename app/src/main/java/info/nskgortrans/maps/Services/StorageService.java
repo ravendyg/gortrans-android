@@ -1,10 +1,14 @@
 package info.nskgortrans.maps.Services;
 
 import android.content.Context;
+import android.content.res.AssetManager;
+
+import org.json.JSONObject;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.Closeable;
+import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.io.ObjectInput;
 import java.io.ObjectInputStream;
@@ -17,7 +21,7 @@ import info.nskgortrans.maps.Data.RoutesInfoData;
 import info.nskgortrans.maps.Data.TrassData;
 
 public class StorageService implements IStorageService {
-    public static final String ROUTES_INFO_FILE_NAME = "routes_info";
+    public static final String ROUTES_INFO_FILE_NAME = "routes_info.json";
     public static final String TRASS_DATA_FILE_NAME = "trass_data";
     public static final String SEARCH_HISTORY_FILE = "search_history";
 
@@ -44,12 +48,17 @@ public class StorageService implements IStorageService {
 
     @Override
     public RoutesInfoData getRoutesInfo() {
-        Object data = getData(ROUTES_INFO_FILE_NAME);
-        if (data != null) {
-            return (RoutesInfoData) data;
-        } else {
-            return null;
+        Object data = null;
+        RoutesInfoData routesInfo = null;
+        try {
+            data = getData(ROUTES_INFO_FILE_NAME);
+            if (data == null) {
+                data = new RoutesInfoData(readAsset(ROUTES_INFO_FILE_NAME));
+            }
+            routesInfo = (RoutesInfoData) data;
+        } catch (Exception e) {
         }
+        return routesInfo;
     }
 
     @Override
@@ -105,14 +114,18 @@ public class StorageService implements IStorageService {
         }
     }
 
-    private Object readObjectFromDisk(String path) {
+    private Object readObjectFromDisk(String fileName) {
         Object result = null;
         InputStream file = null;
         InputStream buffer = null;
         ObjectInput input = null;
 
         try {
-            file = ctx.openFileInput(path);
+            try {
+                file = ctx.openFileInput(fileName);
+            } catch (FileNotFoundException fnf) {
+                return result;
+            }
             buffer = new BufferedInputStream(file);
             input = new ObjectInputStream(buffer);
             result = input.readObject();
@@ -126,6 +139,38 @@ public class StorageService implements IStorageService {
 
         return result;
     }
+
+    private JSONObject readAsset(String filename) throws Exception {
+        InputStream file = ctx.getAssets().open(filename);
+        int size = file.available();
+        byte[] buffer = new byte[size];
+        file.read(buffer);
+        file.close();
+        String str = new String(buffer, "UTF-8");
+        return new JSONObject(str);
+    }
+
+//    private Object readObjectFromDisk(InputStream) {
+//        Object result = null;
+//        InputStream file = null;
+//        InputStream buffer = null;
+//        ObjectInput input = null;
+//
+//        try {
+//            file = ctx.openFileInput(path);
+//            buffer = new BufferedInputStream(file);
+//            input = new ObjectInputStream(buffer);
+//            result = input.readObject();
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//        } finally {
+//            close(buffer);
+//            close(file);
+//            close(input);
+//        }
+//
+//        return result;
+//    }
 
     private void close(Closeable resource) {
         if (resource != null) {

@@ -47,26 +47,23 @@ public class SyncService implements ISyncService {
             @Override
             public void run() {
                 String key = ROUTES_INFO_TSP;
-                long tsp = pref.getLong(key, 0L);
                 long timestamp = utils.getUnixTsp();
+                long tsp = pref.getLong(key, 0L);
                 RoutesInfoData routesInfoData = storageService.getRoutesInfo();
                 if (routesInfoData != null) {
                     Message message = handler.obtainMessage(ROUTES_SYNC_DATA_WHAT, routesInfoData);
                     handler.sendMessage(message);
                 }
-                if (routesInfoData == null) {
-                    // TODO: display a message "Loading bus list"
-                }
+                String hash = routesInfoData.getHash();
                 if (routesInfoData == null || tsp + SYNC_VALID_FOR < timestamp) {
-                    RoutesInfoData httpRoutesInfoData = httpService.getRoutesInfo(tsp);
+                    SharedPreferences.Editor editor = pref.edit();
+                    editor.putLong(key, timestamp);
+                    editor.commit();
+                    RoutesInfoData httpRoutesInfoData = httpService.getRoutesInfo(hash);
                     if (httpRoutesInfoData != null) {
                         routesInfoData = httpRoutesInfoData;
                         Message message = handler.obtainMessage(ROUTES_SYNC_DATA_WHAT, httpRoutesInfoData);
                         handler.sendMessage(message);
-
-                        SharedPreferences.Editor editor = pref.edit();
-                        editor.putLong(key, timestamp);
-                        editor.commit();
                         storageService.setRoutesInfo(httpRoutesInfoData);
                     }
                 }

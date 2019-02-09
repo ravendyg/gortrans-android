@@ -13,13 +13,16 @@ import info.nskgortrans.maps.Constants;
 
 public class RoutesInfoData implements Serializable {
     private Map<Integer, List<WayData>> routes;
+    private String hash;
 
-    public RoutesInfoData(JSONArray input) {
+    public RoutesInfoData(JSONObject input) {
         routes = new HashMap<>();
 
-        for (int i = 0; i < Constants.typeCount; i++) {
-            try {
-                JSONObject routeGroup = input.getJSONObject(i);
+        try {
+            JSONArray data = input.getJSONArray("data");
+            this.hash = input.getString("hash");
+            for (int i = 0; i < Constants.typeCount; i++) {
+                JSONObject routeGroup = data.getJSONObject(i);
                 int type = routeGroup.getInt("t");
                 List<WayData> waysData = new ArrayList<>();
                 JSONArray ways = routeGroup.getJSONArray("w");
@@ -33,9 +36,9 @@ public class RoutesInfoData implements Serializable {
                     }
                 }
                 routes.put(type, waysData);
-            } catch (Exception e) {
-                e.printStackTrace();
             }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
@@ -45,5 +48,9 @@ public class RoutesInfoData implements Serializable {
         } else {
             return new ArrayList<>();
         }
+    }
+
+    public String getHash() {
+        return hash;
     }
 }

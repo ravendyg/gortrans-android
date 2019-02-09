@@ -20,16 +20,16 @@ public class HttpService implements IHttpService {
     }
 
     @Override
-    public RoutesInfoData getRoutesInfo(final long tsp) {
+    public RoutesInfoData getRoutesInfo(final String hash) {
         RoutesInfoData routesInfoData = null;
         try {
             URL url = new URL(BASE_URL + "/v2/sync/routes"
-                    + "?tsp=" + tsp
+                    + "?hash=" + hash
                     + "&api_key=" + apiKey
             );
             JSONObject routesInfoJson = loadData(url);
             if (routesInfoJson != null) {
-                routesInfoData = new RoutesInfoData(routesInfoJson.getJSONArray("data"));
+                routesInfoData = new RoutesInfoData(routesInfoJson);
             }
         } catch (Exception e) {
             e.printStackTrace();
