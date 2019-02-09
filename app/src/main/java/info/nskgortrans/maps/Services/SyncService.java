@@ -49,16 +49,18 @@ public class SyncService implements ISyncService {
                 String key = ROUTES_INFO_TSP;
                 long timestamp = utils.getUnixTsp();
                 long tsp = pref.getLong(key, 0L);
+                String hash = "";
                 RoutesInfoData routesInfoData = storageService.getRoutesInfo();
                 if (routesInfoData != null) {
                     Message message = handler.obtainMessage(ROUTES_SYNC_DATA_WHAT, routesInfoData);
                     handler.sendMessage(message);
+                    hash = routesInfoData.getHash();
                 }
-                String hash = routesInfoData.getHash();
                 if (routesInfoData == null || tsp + SYNC_VALID_FOR < timestamp) {
                     SharedPreferences.Editor editor = pref.edit();
                     editor.putLong(key, timestamp);
                     editor.commit();
+
                     RoutesInfoData httpRoutesInfoData = httpService.getRoutesInfo(hash);
                     if (httpRoutesInfoData != null) {
                         routesInfoData = httpRoutesInfoData;
@@ -86,23 +88,25 @@ public class SyncService implements ISyncService {
                 String key = TRASS_INFO_TSP + code;
                 long tsp = pref.getLong(key, 0L);
                 long timestamp = utils.getUnixTsp();
+                String hash = "";
                 TrassData trassData = storageService.getTrassData(code);
                 if (trassData != null) {
                     Message message = handler.obtainMessage(TRASS_SYNC_DATA_WHAT, trassData);
                     handler.sendMessage(message);
+                    hash = trassData.getHash();
                 }
                 if (trassData == null) {
                     // TODO: display a message "Loading way data"
                 }
                 if (trassData == null || tsp + SYNC_VALID_FOR < timestamp) {
-                    TrassData httpTrassData = httpService.getTrassData(code, tsp);
+                    SharedPreferences.Editor editor = pref.edit();
+                    editor.putLong(key, timestamp);
+                    editor.commit();
+
+                    TrassData httpTrassData = httpService.getTrassData(code, hash);
                     if (httpTrassData != null) {
                         Message message = handler.obtainMessage(TRASS_SYNC_DATA_WHAT, httpTrassData);
                         handler.sendMessage(message);
-
-                        SharedPreferences.Editor editor = pref.edit();
-                        editor.putLong(key, timestamp);
-                        editor.commit();
                         storageService.setTrassData(httpTrassData);
                     }
                 }

@@ -39,17 +39,17 @@ public class HttpService implements IHttpService {
     }
 
     @Override
-    public TrassData getTrassData(final String code, final long tsp) {
+    public TrassData getTrassData(final String code, final String hash) {
         TrassData trassData = null;
         try {
             URL url = new URL(BASE_URL + "/v2/sync/trass/"
                     + code
-                    + "?tsp=" + tsp
+                    + "?hash=" + hash
                     + "&api_key=" + apiKey
             );
             JSONObject trassDataJson = loadData(url);
             if (trassDataJson != null) {
-                trassData = new TrassData(code, trassDataJson.getJSONArray("data"));
+                trassData = new TrassData(code, trassDataJson);
             }
         } catch (Exception e) {
             e.printStackTrace();

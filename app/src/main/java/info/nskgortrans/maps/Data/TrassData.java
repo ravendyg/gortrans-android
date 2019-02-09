@@ -11,14 +11,17 @@ public class TrassData implements Serializable {
     private String code;
     private List<WayPointData> waypoints;
     private List<StopData> stops;
+    private String hash;
 
-    public TrassData(String code, JSONArray input) {
-        this.code = code;
-        waypoints = new ArrayList<>();
-        stops = new ArrayList<>();
-        for (int i = 0; i < input.length(); i++) {
-            try {
-                JSONObject wayPoint = input.getJSONObject(i);
+    public TrassData(String code, JSONObject input) {
+        try {
+            JSONArray data = input.getJSONArray("data");
+            this.hash = input.getString("hash");
+            this.code = code;
+            waypoints = new ArrayList<>();
+            stops = new ArrayList<>();
+            for (int i = 0; i < data.length(); i++) {
+                JSONObject wayPoint = data.getJSONObject(i);
                 double lat = wayPoint.getDouble("t");
                 double lng = wayPoint.getDouble("g");
                 WayPointData wayPointData = new WayPointData(lat, lng);
@@ -29,14 +32,19 @@ public class TrassData implements Serializable {
                     StopData stopData = new StopData(id, name, wayPointData);
                     stops.add(stopData);
                 }
-            } catch (Exception e) {
-                e.printStackTrace();
+
             }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
     public String getCode() {
         return code;
+    }
+
+    public String getHash() {
+        return hash;
     }
 
     public List<StopData> getStops() {

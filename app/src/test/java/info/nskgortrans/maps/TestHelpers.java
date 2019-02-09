@@ -20,6 +20,7 @@ public class TestHelpers {
             res.put("n", name);
             res.put("s", stopb);
             res.put("e", stope);
+            res.put("hash", "hash");
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -44,14 +45,17 @@ public class TestHelpers {
         return res;
     }
 
-    public static JSONArray generateRoutesInfo() {
-        JSONArray res = new JSONArray();
+    public static JSONObject generateRoutesInfo() {
+        JSONObject res = new JSONObject();
+        JSONArray data = new JSONArray();
         int[] types = {1, 2, 3, 8};
         try {
             for (int i : types) {
                 JSONObject type = generateType(i, 5);
-                res.put(type);
+                data.put(type);
             }
+            res.put("data", data);
+            res.put("hash", "hash");
         } catch (Exception e) {
             e.printStackTrace();
         }
