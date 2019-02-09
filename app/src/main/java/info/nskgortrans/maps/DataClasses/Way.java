@@ -21,7 +21,7 @@ public class Way {
 
     public Way(JSONObject input, int type) throws JSONException {
         marsh = input.getString("marsh");
-        name  = input.getString("name");
+        name = input.getString("name");
         stope = input.getString("stope");
         stopb = input.getString("stopb");
         this.type = type + 1;

@@ -26,25 +26,21 @@ public class BusActionDialog {
         header.setText(utils.getTypeString(type) + ": №" + name);
 
         Button zoomBtn = (Button) dialog.findViewById(R.id.zoom_route_btn);
-        zoomBtn.setOnClickListener(new View.OnClickListener()
-        {
-          @Override
-          public void onClick(View v)
-          {
-            ((MainActivity) context).zoomToRoute(code);
-            dialog.cancel();
-          }
+        zoomBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                ((MainActivity) context).zoomToRoute(code);
+                dialog.cancel();
+            }
         });
 
         Button removeBtn = (Button) dialog.findViewById(R.id.remove_route_btn);
-        removeBtn.setOnClickListener(new View.OnClickListener()
-        {
-          @Override
-          public void onClick(View v)
-          {
-            ((MainActivity) context).removeBus(code);
-            dialog.cancel();
-          }
+        removeBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                ((MainActivity) context).removeBus(code);
+                dialog.cancel();
+            }
         });
 
         dialog.show();

@@ -113,7 +113,7 @@ public class MainActivity extends AppCompatActivity {
                         break;
                     }
 
-                    case  SyncService.TRASS_SYNC_DATA_WHAT: {
+                    case SyncService.TRASS_SYNC_DATA_WHAT: {
                         TrassData trassData = (TrassData) msg.obj;
                         for (BusListElementData displayedBus : displayedBuses) {
                             String code = trassData.getCode();
@@ -167,11 +167,9 @@ public class MainActivity extends AppCompatActivity {
         ListView displayedBusesList = (ListView) findViewById(R.id.bus_list);
         displayedBusesList.setAdapter(displayedBusesAdapter);
         displayedBusesList.setOnItemClickListener(
-                new AdapterView.OnItemClickListener()
-                {
+                new AdapterView.OnItemClickListener() {
                     @Override
-                    public void onItemClick( AdapterView<?> adapterView, View view, int position, long id)
-                    {
+                    public void onItemClick(AdapterView<?> adapterView, View view, int position, long id) {
                         BusListElementData elem = displayedBusesAdapter.getElem(position);
                         BusActionDialog.showDialog(context, elem, utils);
                     }
@@ -185,60 +183,60 @@ public class MainActivity extends AppCompatActivity {
         startService(new Intent(this, BusPositionService.class));
     }
 
-  private void startTrackingUser()
-  {
-    if (trackingUser)
-    {
-      return;
-    }
+    private void startTrackingUser() {
+        if (trackingUser) {
+            return;
+        }
 
-    trackingUser = true;
-    // Acquire a reference to the system Location Manager
-    final LocationManager locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
+        trackingUser = true;
+        // Acquire a reference to the system Location Manager
+        final LocationManager locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
 
-    // Define a listener that responds to location updates
-    LocationListener locationListener = new LocationListener() {
-      public void onLocationChanged(Location _location)
-      {
-        location = _location;
-        View gotoUserBtn = findViewById(R.id.user_location);
-        if (location != null) {
-            if (map != null) {
-                map.moveUser(_location);
-            }
-            if (!userFound) {
-                userFound = true;
-                if (gotoUserBtn != null) {
-                    gotoUserBtn.setVisibility(View.VISIBLE);
+        // Define a listener that responds to location updates
+        LocationListener locationListener = new LocationListener() {
+            public void onLocationChanged(Location _location) {
+                location = _location;
+                View gotoUserBtn = findViewById(R.id.user_location);
+                if (location != null) {
+                    if (map != null) {
+                        map.moveUser(_location);
+                    }
+                    if (!userFound) {
+                        userFound = true;
+                        if (gotoUserBtn != null) {
+                            gotoUserBtn.setVisibility(View.VISIBLE);
+                        }
+                    }
+                } else {
+                    userFound = false;
+                    if (gotoUserBtn != null) {
+                        gotoUserBtn.setVisibility(View.GONE);
+                    }
                 }
             }
-        } else {
-            userFound = false;
-            if (gotoUserBtn != null) {
-                gotoUserBtn.setVisibility(View.GONE);
+
+            public void onStatusChanged(String provider, int status, Bundle extras) {
             }
+
+            public void onProviderEnabled(String provider) {
+            }
+
+            public void onProviderDisabled(String provider) {
+            }
+        };
+
+        // Register the listener with the Location Manager to receive location updates
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) !=
+                PackageManager.PERMISSION_GRANTED
+        ) {
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                    FINE_LOCATION_PERMISSION_GRANTED);
+        } else {
+            locationManager.requestLocationUpdates(
+                    LocationManager.NETWORK_PROVIDER, MIN_POSITION_TRACKING_TIME,
+                    MIN_POSITION_TRACKING_DISTANCE, locationListener);
         }
-      }
-
-      public void onStatusChanged(String provider, int status, Bundle extras) {}
-
-      public void onProviderEnabled(String provider) {}
-
-      public void onProviderDisabled(String provider) {}
-    };
-
-    // Register the listener with the Location Manager to receive location updates
-    if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) !=
-            PackageManager.PERMISSION_GRANTED
-            ) {
-      ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
-              FINE_LOCATION_PERMISSION_GRANTED);
-    } else {
-        locationManager.requestLocationUpdates(
-                LocationManager.NETWORK_PROVIDER, MIN_POSITION_TRACKING_TIME,
-                MIN_POSITION_TRACKING_DISTANCE, locationListener);
     }
-  }
 
     public void showSearchBusDialog(View bntView) {
         searchBusDialog = new SearchBusDialog(context, routesInfoData, storageService, utils);
@@ -271,15 +269,15 @@ public class MainActivity extends AppCompatActivity {
         switch (wayData.getType()) {
             case 1:
                 icon = R.drawable.bus;
-            break;
+                break;
 
             case 2:
                 icon = R.drawable.trolley;
-            break;
+                break;
 
             case 3:
                 icon = R.drawable.tram;
-            break;
+                break;
 
             default:
                 icon = R.drawable.minibus;
@@ -296,22 +294,21 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-  public void removeBus(final String code) {
-    freeBusResources(code);
-    map.removeBus(code);
-    displayedBusesAdapter.notifyDataSetChanged();
-    storeDisplayed();
-  }
+    public void removeBus(final String code) {
+        freeBusResources(code);
+        map.removeBus(code);
+        displayedBusesAdapter.notifyDataSetChanged();
+        storeDisplayed();
+    }
 
-  public void zoomToRoute(final String code)
-  {
-    map.zoomToRoute(code);
-  }
+    public void zoomToRoute(final String code) {
+        map.zoomToRoute(code);
+    }
 
     private void storeDisplayed() {
         SharedPreferences.Editor editor = pref.edit();
         String displayed = "";
-        for (BusListElementData el: displayedBuses) {
+        for (BusListElementData el : displayedBuses) {
             displayed += el.getCode() + "$";
         }
         editor.putString("displayed", displayed);
@@ -350,13 +347,12 @@ public class MainActivity extends AppCompatActivity {
         sendBroadcast(intent);
     }
 
-  private void removeBusListener(final String code)
-  {
-    Intent intent = new Intent("info.nskgortrans.maps.gortrans.bus-service");
-    intent.putExtra("event", "remove-bus-listener");
-    intent.putExtra("code", code);
-    sendBroadcast(intent);
-  }
+    private void removeBusListener(final String code) {
+        Intent intent = new Intent("info.nskgortrans.maps.gortrans.bus-service");
+        intent.putExtra("event", "remove-bus-listener");
+        intent.putExtra("code", code);
+        sendBroadcast(intent);
+    }
 
     private void showSearchBtn(RoutesInfoData routesInfoData) {
 //        map.loadStops(
@@ -369,23 +365,18 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-  private void updateState(final String newStateStr)
-  {
+    private void updateState(final String newStateStr) {
 
-  }
+    }
 
 
-  private void startListenForService()
-  {
-    if (serviceReceiver == null)
-    {
-      serviceReceiver = new BroadcastReceiver()
-      {
-        @Override
-        public void onReceive(Context context, Intent intent)
-        {
-          Log.e(LOG_TAG, "receive broadcast");
-          String eventType = intent.getStringExtra("event");
+    private void startListenForService() {
+        if (serviceReceiver == null) {
+            serviceReceiver = new BroadcastReceiver() {
+                @Override
+                public void onReceive(Context context, Intent intent) {
+                    Log.e(LOG_TAG, "receive broadcast");
+                    String eventType = intent.getStringExtra("event");
           /*
           if (eventType.equals(("data")))
           {
@@ -400,113 +391,102 @@ public class MainActivity extends AppCompatActivity {
           }
           else
           */
-              if (eventType.equals("route"))
-          {
-            map.updateBusRoute(intent.getStringExtra("code"),
-                    (BusRoute) intent.getSerializableExtra("data"));
-          }
-          else if (eventType.equals("state-update"))
-          {
-            updateState(intent.getStringExtra("new-state"));
-          }
-          else if (eventType.equals("bus-update"))
-          {
-            HashMap<String, UpdateParcel> parcels =
-                    (HashMap<String, UpdateParcel>) intent.getSerializableExtra("parcels");
-            map.updateBusMarkers(parcels);
-          }
+                    if (eventType.equals("route")) {
+                        map.updateBusRoute(intent.getStringExtra("code"),
+                                (BusRoute) intent.getSerializableExtra("data"));
+                    } else if (eventType.equals("state-update")) {
+                        updateState(intent.getStringExtra("new-state"));
+                    } else if (eventType.equals("bus-update")) {
+                        HashMap<String, UpdateParcel> parcels =
+                                (HashMap<String, UpdateParcel>) intent.getSerializableExtra("parcels");
+                        map.updateBusMarkers(parcels);
+                    }
+                }
+            };
+            LocalBroadcastManager.getInstance(context).
+                    registerReceiver(serviceReceiver, new IntentFilter("info.nskgortrans.maps.main.activity"));
         }
-      };
-      LocalBroadcastManager.getInstance(context).
-        registerReceiver(serviceReceiver, new IntentFilter("info.nskgortrans.maps.main.activity"));
-    }
-  }
-
-
-  @Override
-  public void onResume() {
-    super.onResume();
-  }
-
-  @Override
-  protected void onPause() {
-    super.onPause();
-
-    if (map != null)
-    {
-      map.saveState();
-    }
-  }
-
-  @Override
-  protected void onDestroy() {
-    super.onDestroy();
-
-    removeDialog();
-
-    if (!isServiceRunning(BusPositionService.class))
-    {
-      stopService(new Intent(this, BusPositionService.class));
     }
 
-    Log.e(LOG_TAG, "pause");
-    if (serviceReceiver != null)
-    {
-      LocalBroadcastManager.getInstance(context)
-        .unregisterReceiver(serviceReceiver);
-      serviceReceiver = null;
+
+    @Override
+    public void onResume() {
+        super.onResume();
     }
-  }
 
-  public void zoomToUser(View bntView)
-  {
-    if (userFound)
-    {
-      map.zoomToUser(location);
+    @Override
+    protected void onPause() {
+        super.onPause();
+
+        if (map != null) {
+            map.saveState();
+        }
     }
-  }
 
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
 
-  public void requestStorage(View view) {
-      ActivityCompat.requestPermissions(
-              this,
-              new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
-              WRITE_STORAGE_PERMISSION_GRANTED
-      );
-  }
+        removeDialog();
 
+        if (!isServiceRunning(BusPositionService.class)) {
+            stopService(new Intent(this, BusPositionService.class));
+        }
 
-  private boolean isServiceRunning(Class<?> serviceClass)
-  {
-    ActivityManager manager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
-    for (RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
-      if (serviceClass.getName().equals(service.service.getClassName())) {
-        return true;
-      }
+        Log.e(LOG_TAG, "pause");
+        if (serviceReceiver != null) {
+            LocalBroadcastManager.getInstance(context)
+                    .unregisterReceiver(serviceReceiver);
+            serviceReceiver = null;
+        }
     }
-    return false;
-  }
+
+    public void zoomToUser(View bntView) {
+        if (userFound) {
+            map.zoomToUser(location);
+        }
+    }
 
 
-  @Override
-  public void onStart() {
-    super.onStart();
-  }
-
-  @Override
-  public void onStop() {
-    super.onStop();
-  }
+    public void requestStorage(View view) {
+        ActivityCompat.requestPermissions(
+                this,
+                new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
+                WRITE_STORAGE_PERMISSION_GRANTED
+        );
+    }
 
 
-  private void requestBusOnMap(String busCode) {
-    Intent intent =
-            new Intent("info.nskgortrans.maps.gortrans.socket-service")
-                    .putExtra("busCode", busCode)
-                    .putExtra("event", "request add bus");
+    private boolean isServiceRunning(Class<?> serviceClass) {
+        ActivityManager manager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
+        for (RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
+            if (serviceClass.getName().equals(service.service.getClassName())) {
+                return true;
+            }
+        }
+        return false;
+    }
 
-    sendBroadcast(intent);
-  }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
+    }
+
+
+    private void requestBusOnMap(String busCode) {
+        Intent intent =
+                new Intent("info.nskgortrans.maps.gortrans.socket-service")
+                        .putExtra("busCode", busCode)
+                        .putExtra("event", "request add bus");
+
+        sendBroadcast(intent);
+    }
 
     private void addBus(final WayData wayData, int color, int icon, boolean zoom) {
         BusListElementData busListElement = new BusListElementData(wayData, icon, color, zoom);
@@ -518,14 +498,12 @@ public class MainActivity extends AppCompatActivity {
         addBusListener(code);
     }
 
-  private void addBusToMap(String code)
-  {
-    int color = Integer.parseInt(routeColors.get(code));
-  }
+    private void addBusToMap(String code) {
+        int color = Integer.parseInt(routeColors.get(code));
+    }
 
-  private void updateBusOnMap(String code)
-  {
-  }
+    private void updateBusOnMap(String code) {
+    }
 
     private boolean freeBusResources(String code) {
         removeBusListener(code);
@@ -553,7 +531,7 @@ public class MainActivity extends AppCompatActivity {
         // make sure all permissions granted
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
                 != PackageManager.PERMISSION_GRANTED
-                ) {
+        ) {
             if (!askedPermissions) {
                 ActivityCompat.requestPermissions(
                         this,
@@ -570,7 +548,7 @@ public class MainActivity extends AppCompatActivity {
 
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
                 != PackageManager.PERMISSION_GRANTED
-                ) {
+        ) {
             if (!askedPermissions) {
                 ActivityCompat.requestPermissions(
                         this,

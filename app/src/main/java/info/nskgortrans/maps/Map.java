@@ -45,95 +45,90 @@ import info.nskgortrans.maps.DataClasses.StopInfo;
 import info.nskgortrans.maps.DataClasses.StopMarker;
 import info.nskgortrans.maps.DataClasses.UpdateParcel;
 
-public class Map
-{
-  private static final String LOG_TAG = "Map service";
-  private final int FINE_LOCATION_PERMISSION_GRANTED = 11;
+public class Map {
+    private static final String LOG_TAG = "Map service";
+    private final int FINE_LOCATION_PERMISSION_GRANTED = 11;
 
-  private SharedPreferences pref;
-  private MapView map;
-  private IMapController mapController;
-  private Context ctx;
-  private Location location;
+    private SharedPreferences pref;
+    private MapView map;
+    private IMapController mapController;
+    private Context ctx;
+    private Location location;
 
-  private Marker userMarker;
-  private InfoWindow userInfoWindow;
+    private Marker userMarker;
+    private InfoWindow userInfoWindow;
 
-  private Drawable stopImage;
-  private Drawable userImage;
+    private Drawable stopImage;
+    private Drawable userImage;
 
-  private String nextToZoomOn;
+    private String nextToZoomOn;
 
-  // data
-  private HashMap<String, StopInfo> stopsData;
-  private HashMap<String, HashSet<String>> busStops = new HashMap<>();
-  private HashMap<String, BusRoute> busRoutes = new HashMap<>();
-  // stop markers on the map with corresponding routes counter
-  private HashMap<String, StopMarker> stopsOnMap = new HashMap<>();
-  private HashMap<String, Polyline> busRoutesOnMap = new HashMap<>();
-  private HashSet<String> routeDisplayed = new HashSet<>();
+    // data
+    private HashMap<String, StopInfo> stopsData;
+    private HashMap<String, HashSet<String>> busStops = new HashMap<>();
+    private HashMap<String, BusRoute> busRoutes = new HashMap<>();
+    // stop markers on the map with corresponding routes counter
+    private HashMap<String, StopMarker> stopsOnMap = new HashMap<>();
+    private HashMap<String, Polyline> busRoutesOnMap = new HashMap<>();
+    private HashSet<String> routeDisplayed = new HashSet<>();
 
-  private HashMap<String, HashMap<String, Marker>> busMarkers = new HashMap<>();
+    private HashMap<String, HashMap<String, Marker>> busMarkers = new HashMap<>();
 
-  private HashMap<Integer, Drawable> busMarkerIcons = new HashMap<>();
+    private HashMap<Integer, Drawable> busMarkerIcons = new HashMap<>();
 
-  public void init(Context context, View view, SharedPreferences _pref)
-  {
-    pref = _pref;
-    OpenStreetMapTileProviderConstants.setUserAgentValue(BuildConfig.APPLICATION_ID);
+    public void init(Context context, View view, SharedPreferences _pref) {
+        pref = _pref;
+        OpenStreetMapTileProviderConstants.setUserAgentValue(BuildConfig.APPLICATION_ID);
 
-    /** init map */
-    map = (MapView) view;
-    ctx = context;
-    map.setTileSource(TileSourceFactory.MAPNIK);
+        /** init map */
+        map = (MapView) view;
+        ctx = context;
+        map.setTileSource(TileSourceFactory.MAPNIK);
 
-    map.setBuiltInZoomControls(true);
-    map.setMultiTouchControls(true);
+        map.setBuiltInZoomControls(true);
+        map.setMultiTouchControls(true);
 
-    stopImage = ContextCompat.getDrawable(ctx, R.drawable.bus_stop2);
-    Bitmap stopBitmap = ((BitmapDrawable) stopImage).getBitmap();
-    stopImage = new BitmapDrawable(ctx.getResources(), Bitmap.createScaledBitmap(stopBitmap, 50, 50, true));
+        stopImage = ContextCompat.getDrawable(ctx, R.drawable.bus_stop2);
+        Bitmap stopBitmap = ((BitmapDrawable) stopImage).getBitmap();
+        stopImage = new BitmapDrawable(ctx.getResources(), Bitmap.createScaledBitmap(stopBitmap, 50, 50, true));
 
-    busMarkerIcons.put(R.color.busColor1, createMarkerImage(R.drawable.bus_marker_red));
-    busMarkerIcons.put(R.color.busColor2, createMarkerImage(R.drawable.bus_marker_blue));
-    busMarkerIcons.put(R.color.busColor3, createMarkerImage(R.drawable.bus_marker_orange));
-    busMarkerIcons.put(R.color.busColor4, createMarkerImage(R.drawable.bus_marker_yellow));
-    busMarkerIcons.put(R.color.busColor5, createMarkerImage(R.drawable.bus_marker_gray));
+        busMarkerIcons.put(R.color.busColor1, createMarkerImage(R.drawable.bus_marker_red));
+        busMarkerIcons.put(R.color.busColor2, createMarkerImage(R.drawable.bus_marker_blue));
+        busMarkerIcons.put(R.color.busColor3, createMarkerImage(R.drawable.bus_marker_orange));
+        busMarkerIcons.put(R.color.busColor4, createMarkerImage(R.drawable.bus_marker_yellow));
+        busMarkerIcons.put(R.color.busColor5, createMarkerImage(R.drawable.bus_marker_gray));
 
-    userImage = ContextCompat.getDrawable(ctx, R.drawable.pin);
-    Bitmap userBitmap = ((BitmapDrawable) userImage).getBitmap();
-    userImage = new BitmapDrawable(ctx.getResources(), Bitmap.createScaledBitmap(userBitmap, 50, 80, true));
+        userImage = ContextCompat.getDrawable(ctx, R.drawable.pin);
+        Bitmap userBitmap = ((BitmapDrawable) userImage).getBitmap();
+        userImage = new BitmapDrawable(ctx.getResources(), Bitmap.createScaledBitmap(userBitmap, 50, 80, true));
 
-    float lat = pref.getFloat(ctx.getString(R.string.pref_lat), (float) 54.908593335436926);
-    float lng = pref.getFloat(ctx.getString(R.string.pref_lng), (float) 83.0291748046875);
-    int zoom = pref.getInt(ctx.getString(R.string.pref_zoom), 10);
+        float lat = pref.getFloat(ctx.getString(R.string.pref_lat), (float) 54.908593335436926);
+        float lng = pref.getFloat(ctx.getString(R.string.pref_lng), (float) 83.0291748046875);
+        int zoom = pref.getInt(ctx.getString(R.string.pref_zoom), 10);
 
-    mapController = map.getController();
-    mapController.setZoom(zoom);
-    GeoPoint startPoint = new GeoPoint(lat, lng);
-    mapController.setCenter(startPoint);
+        mapController = map.getController();
+        mapController.setZoom(zoom);
+        GeoPoint startPoint = new GeoPoint(lat, lng);
+        mapController.setCenter(startPoint);
 
-    map.setMapListener(new MapListener()
-    {
-      @Override
-      public boolean onScroll(ScrollEvent scrollEvent)
-      {
-        hideUserInfo();
-        return false;
-      }
+        map.setMapListener(new MapListener() {
+            @Override
+            public boolean onScroll(ScrollEvent scrollEvent) {
+                hideUserInfo();
+                return false;
+            }
 
-      @Override
-      public boolean onZoom(ZoomEvent zoomEvent)
-      {
-        hideUserInfo();
-        return false;
-      }
-    });
-  }
+            @Override
+            public boolean onZoom(ZoomEvent zoomEvent) {
+                hideUserInfo();
+                return false;
+            }
+        });
+    }
 
     public void loadStops(
-        HashMap<String, StopInfo> stopsData,
-        HashMap<String, HashSet<String>> busStops
+            HashMap<String, StopInfo> stopsData,
+            HashMap<String, HashSet<String>> busStops
     ) {
         if (stopsData == null) {
             stopsData = new HashMap<>();
@@ -146,60 +141,55 @@ public class Map
     }
 
 
+    public void saveState() {
+        try { // save current map position and zoom
+            Projection proj = map.getProjection();
+            GeoPoint center = proj.getBoundingBox().getCenter();
 
-  public void saveState()
-  {
-    try { // save current map position and zoom
-      Projection proj = map.getProjection();
-      GeoPoint center = proj.getBoundingBox().getCenter();
+            float lat = (float) center.getLatitude();
+            float lng = (float) center.getLongitude();
+            int zoom = proj.getZoomLevel();
 
-      float lat = (float) center.getLatitude();
-      float lng = (float) center.getLongitude();
-      int zoom = proj.getZoomLevel();
-
-      SharedPreferences.Editor editor = pref.edit();
-      editor.putFloat(ctx.getString(R.string.pref_lat), lat);
-      editor.putFloat(ctx.getString(R.string.pref_lng), lng);
-      editor.putInt(ctx.getString(R.string.pref_zoom), zoom);
-      editor.commit();
-    } catch (Exception err) {
-      Log.e(LOG_TAG, "save map position", err);
+            SharedPreferences.Editor editor = pref.edit();
+            editor.putFloat(ctx.getString(R.string.pref_lat), lat);
+            editor.putFloat(ctx.getString(R.string.pref_lng), lng);
+            editor.putInt(ctx.getString(R.string.pref_zoom), zoom);
+            editor.commit();
+        } catch (Exception err) {
+            Log.e(LOG_TAG, "save map position", err);
+        }
     }
-  }
 
-  public void moveUser(final Location location)
-  {
-    if (location != null) {
-      if (userMarker == null) {
-        userMarker = new Marker(map);
-        userMarker.setTitle(ctx.getString(R.string.user_marker));
-        userMarker.setPosition(new GeoPoint(location));
-        userMarker.setIcon(userImage);
-        userMarker.setAnchor(Marker.ANCHOR_CENTER, 1.0f);
-        map.getOverlays().add(userMarker);
-      } else {
-        userMarker.setPosition(new GeoPoint(location));
-      }
-      map.invalidate();
-      Log.e(LOG_TAG + " save posit", location.toString());
+    public void moveUser(final Location location) {
+        if (location != null) {
+            if (userMarker == null) {
+                userMarker = new Marker(map);
+                userMarker.setTitle(ctx.getString(R.string.user_marker));
+                userMarker.setPosition(new GeoPoint(location));
+                userMarker.setIcon(userImage);
+                userMarker.setAnchor(Marker.ANCHOR_CENTER, 1.0f);
+                map.getOverlays().add(userMarker);
+            } else {
+                userMarker.setPosition(new GeoPoint(location));
+            }
+            map.invalidate();
+            Log.e(LOG_TAG + " save posit", location.toString());
+        }
     }
-  }
 
 
-  public void zoomToUser(Location location)
-  {
-      if (location != null) {
-          Log.e(LOG_TAG + " zoom user", location.toString());
-          GeoPoint userPoint = new GeoPoint(location);
-          mapController.setCenter(userPoint);
-      }
-  }
+    public void zoomToUser(Location location) {
+        if (location != null) {
+            Log.e(LOG_TAG + " zoom user", location.toString());
+            GeoPoint userPoint = new GeoPoint(location);
+            mapController.setCenter(userPoint);
+        }
+    }
 
-  public void zoomToRoute(final String code)
-  {
-    nextToZoomOn = code;
-    tryToZoom();
-  }
+    public void zoomToRoute(final String code) {
+        nextToZoomOn = code;
+        tryToZoom();
+    }
 
     public void upsertBusMain(final BusListElementData busListElementData, final TrassData trassData) {
         String code = busListElementData.getCode();
@@ -217,14 +207,12 @@ public class Map
         map.invalidate();
     }
 
-  public void updateBusRoute(final String code, final BusRoute route)
-  {
-    busRoutes.put(code, route);
-    if (busRoutesOnMap.containsKey(code))
-    {
-      // replace the old polyline with a new one
+    public void updateBusRoute(final String code, final BusRoute route) {
+        busRoutes.put(code, route);
+        if (busRoutesOnMap.containsKey(code)) {
+            // replace the old polyline with a new one
+        }
     }
-  }
 
     public void removeBus(final String busCode) {
         removeBusStops(busCode);
@@ -258,46 +246,38 @@ public class Map
         }
     }
 
-  public void updateBusMarkers(HashMap<String, UpdateParcel> parcels)
-  {
-    Iterator<String> busCodeIterator = parcels.keySet().iterator();
-    while (busCodeIterator.hasNext())
-    {
-      String busCode = busCodeIterator.next();
-      UpdateParcel parcel = parcels.get(busCode);
-      HashMap<String, Marker> buses;
-      if (!busMarkers.containsKey(busCode))
-      {
-        buses = new HashMap<>();
-        busMarkers.put(busCode, buses);
-      }
-      else
-      {
-        buses = busMarkers.get(busCode);
-      }
-      // add
-      Iterator<String> addIterator = parcel.add.keySet().iterator();
-      while (addIterator.hasNext())
-      {
-        String graph = addIterator.next();
+    public void updateBusMarkers(HashMap<String, UpdateParcel> parcels) {
+        Iterator<String> busCodeIterator = parcels.keySet().iterator();
+        while (busCodeIterator.hasNext()) {
+            String busCode = busCodeIterator.next();
+            UpdateParcel parcel = parcels.get(busCode);
+            HashMap<String, Marker> buses;
+            if (!busMarkers.containsKey(busCode)) {
+                buses = new HashMap<>();
+                busMarkers.put(busCode, buses);
+            } else {
+                buses = busMarkers.get(busCode);
+            }
+            // add
+            Iterator<String> addIterator = parcel.add.keySet().iterator();
+            while (addIterator.hasNext()) {
+                String graph = addIterator.next();
 //        buses.put(graph, busMarkerFactory(busCode, parcel.add.get(graph)));
-      }
-      // remove
-      for (String graph: parcel.remove)
-      {
-        removeBusMarker(busCode, graph);
-      }
-      // update
-      Iterator<String> updateIterator = parcel.update.keySet().iterator();
-      while (updateIterator.hasNext())
-      {
-        String graph = updateIterator.next();
-        updateBusMarker(busCode, parcel.update.get(graph));
-      }
-    }
+            }
+            // remove
+            for (String graph : parcel.remove) {
+                removeBusMarker(busCode, graph);
+            }
+            // update
+            Iterator<String> updateIterator = parcel.update.keySet().iterator();
+            while (updateIterator.hasNext()) {
+                String graph = updateIterator.next();
+                updateBusMarker(busCode, parcel.update.get(graph));
+            }
+        }
 
-    map.invalidate();
-  }
+        map.invalidate();
+    }
 
     private void addBusStops(final String code) {
         HashSet<String> stops = busStops.get(code);
@@ -317,71 +297,59 @@ public class Map
         }
     }
 
-  private void resetStopAndBusMarkers()
-  {
-    List<Overlay> over = map.getOverlays();
-    Iterator<StopMarker> stopIterator = stopsOnMap.values().iterator();
-    while (stopIterator.hasNext())
-    {
-      Marker mr = stopIterator.next().getMarker();
-      over.remove(mr);
-      over.add(mr);
+    private void resetStopAndBusMarkers() {
+        List<Overlay> over = map.getOverlays();
+        Iterator<StopMarker> stopIterator = stopsOnMap.values().iterator();
+        while (stopIterator.hasNext()) {
+            Marker mr = stopIterator.next().getMarker();
+            over.remove(mr);
+            over.add(mr);
+        }
+        Iterator<HashMap<String, Marker>> busGroupIterator = busMarkers.values().iterator();
+        while (busGroupIterator.hasNext()) {
+            Iterator<Marker> busIterator = busGroupIterator.next().values().iterator();
+            while (busIterator.hasNext()) {
+                Marker mr = busIterator.next();
+                over.remove(mr);
+                over.add(mr);
+            }
+        }
     }
-    Iterator<HashMap<String, Marker>> busGroupIterator = busMarkers.values().iterator();
-    while (busGroupIterator.hasNext())
-    {
-      Iterator<Marker> busIterator = busGroupIterator.next().values().iterator();
-      while (busIterator.hasNext())
-      {
-        Marker mr = busIterator.next();
-        over.remove(mr);
-        over.add(mr);
-      }
-    }
-  }
 
-  private void tryToZoom()
-  {
-    if (nextToZoomOn != null)
-    {
-      Polyline poly = busRoutesOnMap.get(nextToZoomOn);
-      if (poly == null)
-      {
-        return;
-      }
-      double north = -1000, south = 1000, east = -1000, west = 1000;
-      Iterator points = poly.getPoints().iterator();
-      while (points.hasNext())
-      {
-        GeoPoint point = (GeoPoint) points.next();
-        double lat = point.getLatitude();
-        if (north < lat)
-        {
-          north = lat;
+    private void tryToZoom() {
+        if (nextToZoomOn != null) {
+            Polyline poly = busRoutesOnMap.get(nextToZoomOn);
+            if (poly == null) {
+                return;
+            }
+            double north = -1000, south = 1000, east = -1000, west = 1000;
+            Iterator points = poly.getPoints().iterator();
+            while (points.hasNext()) {
+                GeoPoint point = (GeoPoint) points.next();
+                double lat = point.getLatitude();
+                if (north < lat) {
+                    north = lat;
+                }
+                if (south > lat) {
+                    south = lat;
+                }
+                double lng = point.getLongitude();
+                if (east < lng) {
+                    east = lng;
+                }
+                if (west > lng) {
+                    west = lng;
+                }
+            }
+            BoundingBox box = new BoundingBox(north, east, south, west);
+            map.zoomToBoundingBox(box, true);
+            nextToZoomOn = null;
         }
-        if (south > lat)
-        {
-          south = lat;
-        }
-        double lng = point.getLongitude();
-        if (east < lng)
-        {
-          east = lng;
-        }
-        if (west > lng)
-        {
-          west = lng;
-        }
-      }
-      BoundingBox box = new BoundingBox(north, east, south, west);
-      map.zoomToBoundingBox(box, true);
-      nextToZoomOn = null;
     }
-  }
 
     private void removeBusStops(final String code) {
         boolean closed = false;
-        HashSet<String > stops = busStops.get(code);
+        HashSet<String> stops = busStops.get(code);
         if (stops == null) {
             return;
         }
@@ -409,13 +377,11 @@ public class Map
     }
 
 
-  private void hideUserInfo()
-  {
-    if (userInfoWindow != null && userInfoWindow.isOpen())
-    {
-      userInfoWindow.close();
+    private void hideUserInfo() {
+        if (userInfoWindow != null && userInfoWindow.isOpen()) {
+            userInfoWindow.close();
+        }
     }
-  }
 
 
     private Marker stopMarkerFactory(StopInfo info) {
@@ -428,17 +394,16 @@ public class Map
         return mr;
     }
 
-  private Marker busMarkerFactory(String busCode, BusInfo info, int color)
-  {
-    Marker mr = new Marker(map);
-    mr.setPosition(new GeoPoint(info.lat, info.lng));
-    mr.setIcon(busMarkerIcons.get(color));
-    mr.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER);
-    mr.setRotation(transformAzimuth(info.azimuth));
-    mr.setTitle(info.title);
-    map.getOverlays().add(mr);
-    return mr;
-  }
+    private Marker busMarkerFactory(String busCode, BusInfo info, int color) {
+        Marker mr = new Marker(map);
+        mr.setPosition(new GeoPoint(info.lat, info.lng));
+        mr.setIcon(busMarkerIcons.get(color));
+        mr.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER);
+        mr.setRotation(transformAzimuth(info.azimuth));
+        mr.setTitle(info.title);
+        map.getOverlays().add(mr);
+        return mr;
+    }
 
     private void removeBusMarker(String busCode, String graph) {
         HashMap<String, Marker> mrs = busMarkers.get(busCode);
@@ -459,49 +424,41 @@ public class Map
         }
     }
 
-  private void removeBusesByRoute(String busCode)
-  {
-    if (busMarkers.containsKey(busCode))
-    {
-      HashMap<String, Marker> mrs = busMarkers.get(busCode);
-      Iterator<Marker> mrsIterator = mrs.values().iterator();
-      while (mrsIterator.hasNext())
-      {
-        Marker marker = mrsIterator.next();
-        map.getOverlays().remove(marker);
-      }
+    private void removeBusesByRoute(String busCode) {
+        if (busMarkers.containsKey(busCode)) {
+            HashMap<String, Marker> mrs = busMarkers.get(busCode);
+            Iterator<Marker> mrsIterator = mrs.values().iterator();
+            while (mrsIterator.hasNext()) {
+                Marker marker = mrsIterator.next();
+                map.getOverlays().remove(marker);
+            }
+        }
     }
-  }
 
-  private void updateBusMarker(String busCode, BusInfo info)
-  {
-    if (busMarkers.containsKey(busCode))
-    {
-      HashMap<String, Marker> mrs = busMarkers.get(busCode);
-      if (mrs.containsKey(""+info.graph))
-      {
-        Marker marker = mrs.get(""+info.graph);
-        marker.setPosition(new GeoPoint(info.lat, info.lng));
-        marker.setRotation(transformAzimuth(info.azimuth));
-      }
+    private void updateBusMarker(String busCode, BusInfo info) {
+        if (busMarkers.containsKey(busCode)) {
+            HashMap<String, Marker> mrs = busMarkers.get(busCode);
+            if (mrs.containsKey("" + info.graph)) {
+                Marker marker = mrs.get("" + info.graph);
+                marker.setPosition(new GeoPoint(info.lat, info.lng));
+                marker.setRotation(transformAzimuth(info.azimuth));
+            }
+        }
     }
-  }
 
-  private float transformAzimuth(int azimuth)
-  {
-    return (90 - azimuth);
-  }
+    private float transformAzimuth(int azimuth) {
+        return (90 - azimuth);
+    }
 
-  private Drawable createMarkerImage(int resId)
-  {
+    private Drawable createMarkerImage(int resId) {
 
-    Drawable markerImage = ContextCompat.getDrawable(ctx, resId);
-    Bitmap redMarkerBitmap = ((BitmapDrawable) markerImage).getBitmap();
+        Drawable markerImage = ContextCompat.getDrawable(ctx, resId);
+        Bitmap redMarkerBitmap = ((BitmapDrawable) markerImage).getBitmap();
 
 
-    markerImage = new BitmapDrawable(ctx.getResources(),
-            Bitmap.createScaledBitmap(redMarkerBitmap, 50, 60, true));
+        markerImage = new BitmapDrawable(ctx.getResources(),
+                Bitmap.createScaledBitmap(redMarkerBitmap, 50, 60, true));
 
-    return markerImage;
-  }
+        return markerImage;
+    }
 }

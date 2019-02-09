@@ -9,10 +9,14 @@ import info.nskgortrans.maps.Data.WayData;
 public class Utils {
     public String getTypeString(final int type) {
         switch (type) {
-            case 1: return "Автобус";
-            case 2: return "Троллейбус";
-            case 3: return "Трамвай";
-            default: return "Маршрутка";
+            case 1:
+                return "Автобус";
+            case 2:
+                return "Троллейбус";
+            case 3:
+                return "Трамвай";
+            default:
+                return "Маршрутка";
         }
     }
 

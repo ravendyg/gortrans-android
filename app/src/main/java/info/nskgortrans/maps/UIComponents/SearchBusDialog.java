@@ -72,11 +72,11 @@ public class SearchBusDialog extends Dialog {
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         setContentView(R.layout.bus_search_menu);
         getWindow().setLayout(
-            WindowManager.LayoutParams.MATCH_PARENT,
-            WindowManager.LayoutParams.MATCH_PARENT
+                WindowManager.LayoutParams.MATCH_PARENT,
+                WindowManager.LayoutParams.MATCH_PARENT
         );
         getWindow().setBackgroundDrawable(
-            new ColorDrawable(Color.rgb(255,255,255))
+                new ColorDrawable(Color.rgb(255, 255, 255))
         );
         show();
 
@@ -94,48 +94,50 @@ public class SearchBusDialog extends Dialog {
         drawMenu();
 
         searchInput.addTextChangedListener(
-            new TextWatcher() {
-                @Override
-                public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+                new TextWatcher() {
+                    @Override
+                    public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+                    }
 
-                @Override
-                public void onTextChanged(CharSequence s, int start, int before, int count) {}
+                    @Override
+                    public void onTextChanged(CharSequence s, int start, int before, int count) {
+                    }
 
-                @Override
-                public void afterTextChanged(Editable s) {
-                    query = s.toString();
-                    filterSearchResults();
-                }
-            });
+                    @Override
+                    public void afterTextChanged(Editable s) {
+                        query = s.toString();
+                        filterSearchResults();
+                    }
+                });
 
         clearSearchBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View btn) {
-            searchInput.setText("");
-            btn.setVisibility(View.GONE);
-            filterSearchResults();
+                searchInput.setText("");
+                btn.setVisibility(View.GONE);
+                filterSearchResults();
             }
         });
 
         list.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
-            public void onItemClick( AdapterView<?> adapterView, View view, int position, long id) {
-            final WayData elem = adapter.getElem(position);
+            public void onItemClick(AdapterView<?> adapterView, View view, int position, long id) {
+                final WayData elem = adapter.getElem(position);
 
-            InputMethodManager imm = (InputMethodManager) context.getSystemService(Context.INPUT_METHOD_SERVICE);
-            imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
+                InputMethodManager imm = (InputMethodManager) context.getSystemService(Context.INPUT_METHOD_SERVICE);
+                imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
 
-            saveToHistory(elem);
+                saveToHistory(elem);
 
-            // give time to hide keyboard
-            new Handler().postDelayed(new Runnable() {
-                    @Override
-                    public void run() {
-                        ((MainActivity) context).selectBus(elem, true);
-                    }
-                },
-                100
-            );
+                // give time to hide keyboard
+                new Handler().postDelayed(new Runnable() {
+                                              @Override
+                                              public void run() {
+                                                  ((MainActivity) context).selectBus(elem, true);
+                                              }
+                                          },
+                        100
+                );
             }
         });
 
@@ -160,11 +162,9 @@ public class SearchBusDialog extends Dialog {
 
         for (int i = 0; i < icons.size(); i++) {
             final LinearLayout icon = icons.get(i);
-            icon.setOnClickListener(new View.OnClickListener()
-            {
+            icon.setOnClickListener(new View.OnClickListener() {
                 @Override
-                public void onClick(View v)
-                {
+                public void onClick(View v) {
                     int id = v.getId();
                     for (int j = 0; j < icons.size(); j++) {
                         if (id == icons.get(j).getId()) {
@@ -202,8 +202,8 @@ public class SearchBusDialog extends Dialog {
 
             List<WayData> input = routesInfoData.getWaysByType(utils.getType(selectedIcon));
             result.clear();
-            for (WayData el: input) {
-                if ( el.getName().matches(".*" + query + ".*")) {
+            for (WayData el : input) {
+                if (el.getName().matches(".*" + query + ".*")) {
                     result.add(el);
                 }
             }
@@ -211,7 +211,7 @@ public class SearchBusDialog extends Dialog {
             if (clearSearchBtn != null) {
                 clearSearchBtn.setVisibility(View.INVISIBLE);
             }
-            for (WayData el: history.getType(selectedIcon)) {
+            for (WayData el : history.getType(selectedIcon)) {
                 result.add(el);
             }
         }

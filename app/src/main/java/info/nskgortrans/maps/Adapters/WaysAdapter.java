@@ -37,13 +37,13 @@ public class WaysAdapter extends BaseAdapter {
     public Object getItem(int position) {
         return data.get(position);
     }
-  
+
     public WayData getElem(int position) {
         return (WayData) getItem(position);
     }
 
     @Override
-    public long getItemId (int position) {
+    public long getItemId(int position) {
         return position;
     }
 
