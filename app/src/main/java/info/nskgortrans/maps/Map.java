@@ -63,6 +63,8 @@ public class Map {
 
     private String nextToZoomOn;
 
+    private HashMap<String, Integer> routeColors;
+
     // data
     private HashMap<String, StopInfo> stopsData;
     private HashMap<String, HashSet<String>> busStops = new HashMap<>();
@@ -97,6 +99,7 @@ public class Map {
         busMarkerIcons.put(R.color.busColor3, createMarkerImage(R.drawable.bus_marker_orange));
         busMarkerIcons.put(R.color.busColor4, createMarkerImage(R.drawable.bus_marker_yellow));
         busMarkerIcons.put(R.color.busColor5, createMarkerImage(R.drawable.bus_marker_gray));
+        routeColors = new HashMap<>();
 
         userImage = ContextCompat.getDrawable(ctx, R.drawable.pin);
         Bitmap userBitmap = ((BitmapDrawable) userImage).getBitmap();
@@ -191,17 +194,21 @@ public class Map {
         tryToZoom();
     }
 
+    public void setColor(String code, Integer color) {
+        routeColors.put(code, color);
+    }
+
     public void upsertBusMain(final BusListElementData busListElementData, final TrassData trassData) {
         String code = busListElementData.getCode();
         List<WayPointData> waypoints = trassData.getWaypoints();
 //        List<StopData> stops = trassData.getStops();
-        int color = busListElementData.getColor();
+        int color = routeColors.get(code);
         if (busListElementData.isZoom()) {
             nextToZoomOn = code;
             busListElementData.disableZoom();
         }
 
-        addPolyline(code, waypoints, color);
+        addPolyline(code, waypoints);
 //        addBusStops(code);
 //        tryToZoom();
         map.invalidate();
@@ -221,7 +228,8 @@ public class Map {
         map.invalidate();
     }
 
-    public void addPolyline(String busCode, List<WayPointData> points, int color) {
+    // TODO: make sure route line is always under the bus markers
+    public void addPolyline(String busCode, List<WayPointData> points) {
         removePolyline(busCode);
         Polyline poly = new Polyline();
         List<GeoPoint> geoPoints = new ArrayList<>();
@@ -230,6 +238,7 @@ public class Map {
         }
 
         poly.setPoints(geoPoints);
+        int color = routeColors.get(busCode);
         poly.setColor(ContextCompat.getColor(ctx, color));
         map.getOverlays().add(poly);
         busRoutesOnMap.put(busCode, poly);
@@ -262,7 +271,10 @@ public class Map {
             Iterator<String> addIterator = parcel.add.keySet().iterator();
             while (addIterator.hasNext()) {
                 String graph = addIterator.next();
-//        buses.put(graph, busMarkerFactory(busCode, parcel.add.get(graph)));
+                buses.put(graph, busMarkerFactory(
+                        busCode,
+                        parcel.add.get(graph)
+                ));
             }
             // remove
             for (String graph : parcel.remove) {
@@ -394,9 +406,10 @@ public class Map {
         return mr;
     }
 
-    private Marker busMarkerFactory(String busCode, BusInfo info, int color) {
+    private Marker busMarkerFactory(String busCode, BusInfo info) {
         Marker mr = new Marker(map);
         mr.setPosition(new GeoPoint(info.lat, info.lng));
+        int color = routeColors.get(busCode);
         mr.setIcon(busMarkerIcons.get(color));
         mr.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER);
         mr.setRotation(transformAzimuth(info.azimuth));

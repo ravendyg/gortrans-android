@@ -153,9 +153,15 @@ public class JSONParser {
                 JSONObject busInfo = ob.getJSONObject(key);
 
                 UpdateParcel parcel = new UpdateParcel();
-                parcel.add = parseBusDict(busInfo.getJSONObject("add"));
-                parcel.remove = parseStringList(busInfo.getJSONArray("remove"));
-                parcel.update = parseBusDict(busInfo.getJSONObject("update"));
+                if (busInfo.has("add")) {
+                    parcel.add = parseBusDict(busInfo.getJSONObject("add"));
+                }
+                if (busInfo.has("remove")) {
+                    parcel.remove = parseStringList(busInfo.getJSONArray("remove"));
+                }
+                if (busInfo.has("update")) {
+                    parcel.update = parseBusDict(busInfo.getJSONObject("update"));
+                }
 
                 out.put(key, parcel);
             }

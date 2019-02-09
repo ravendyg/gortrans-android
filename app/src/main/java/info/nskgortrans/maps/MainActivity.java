@@ -27,8 +27,6 @@ import android.widget.AdapterView;
 import android.widget.ListView;
 
 
-import org.osmdroid.util.GeoPoint;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -43,6 +41,7 @@ import info.nskgortrans.maps.DataClasses.StopInfo;
 import info.nskgortrans.maps.DataClasses.UpdateParcel;
 import info.nskgortrans.maps.Data.WayData;
 import info.nskgortrans.maps.Services.BusPositionService;
+import info.nskgortrans.maps.Services.BusService;
 import info.nskgortrans.maps.Services.HttpService;
 import info.nskgortrans.maps.Services.IHttpService;
 import info.nskgortrans.maps.Services.IStorageService;
@@ -57,7 +56,6 @@ public class MainActivity extends AppCompatActivity {
     private final int COARSE_LOCATION_PERMISSION_GRANTED = 10;
     private final int FINE_LOCATION_PERMISSION_GRANTED = 11;
     private final int WRITE_STORAGE_PERMISSION_GRANTED = 12;
-
     private final int MIN_POSITION_TRACKING_TIME = 1000 * 60;
     private final long MIN_POSITION_TRACKING_DISTANCE = 10;
 
@@ -66,11 +64,13 @@ public class MainActivity extends AppCompatActivity {
     private Context context;
     private IStorageService storageService;
     private ISyncService syncService;
+    private BusService busService;
 
     private SharedPreferences pref;
     private Utils utils;
 
     private static Handler syncHandler;
+    private static Handler updateHandler;
 
     RoutesInfoData routesInfoData;
 //    private ArrayList<WayGroup> wayGroups;
@@ -88,8 +88,6 @@ public class MainActivity extends AppCompatActivity {
     private ArrayList<Integer> availableColors;
     private ArrayList<BusListElementData> displayedBuses;
     private BusListAdapter displayedBusesAdapter;
-
-    private HashMap<String, String> routeColors;
 
     private HashMap<String, StopInfo> stops;
     private HashMap<String, HashSet<String>> busStops;
@@ -129,6 +127,20 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        updateHandler = new Handler(new Handler.Callback() {
+            @Override
+            public boolean handleMessage(Message msg) {
+                switch (msg.what) {
+                    case BusService.BUS_UPDATE_WHAT: {
+                        HashMap<String, UpdateParcel> parcels =
+                                (HashMap<String, UpdateParcel>) msg.obj;
+                        map.updateBusMarkers(parcels);
+                    }
+                }
+                return true;
+            }
+        });
+
         context = this;
         pref = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
         String apiKey = ensureApiKey();
@@ -136,6 +148,7 @@ public class MainActivity extends AppCompatActivity {
         IHttpService httpService = new HttpService(apiKey);
         storageService = new StorageService(context);
         syncService = new SyncService(storageService, httpService, pref, utils, syncHandler);
+        busService = new BusService(updateHandler, apiKey);
 
         boolean storageGranted = handlePermissionVerifiation(savedInstanceState);
         if (storageGranted) {
@@ -156,10 +169,10 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void init() {
-        syncService.syncRoutesInfo().start();
+        syncService.syncRoutesInfo();
+        busService.start();
 
         availableColors = new ArrayList<>(Arrays.asList(colors));
-        routeColors = new HashMap<>();
 
         // TODO refactor into a separate UI component
         displayedBuses = new ArrayList<>(Arrays.asList(new BusListElementData[0]));
@@ -284,10 +297,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         addBus(wayData, newColor, icon, zoom);
-        Thread trassSyncThread = syncService.syncTrassInfo(wayData.getCode());
-        if (trassSyncThread != null) {
-            trassSyncThread.start();
-        }
+        syncService.syncTrassInfo(wayData.getCode());
 
         if (zoom) {
             storeDisplayed();
@@ -337,21 +347,6 @@ public class MainActivity extends AppCompatActivity {
             searchBusDialog.cancel();
             searchBusDialog = null;
         }
-    }
-
-    // TODO: use a WS client running in a thread, not in a service
-    private void addBusListener(final String code) {
-        Intent intent = new Intent("info.nskgortrans.maps.gortrans.bus-service");
-        intent.putExtra("event", "add-bus-listener");
-        intent.putExtra("code", code);
-        sendBroadcast(intent);
-    }
-
-    private void removeBusListener(final String code) {
-        Intent intent = new Intent("info.nskgortrans.maps.gortrans.bus-service");
-        intent.putExtra("event", "remove-bus-listener");
-        intent.putExtra("code", code);
-        sendBroadcast(intent);
     }
 
     private void showSearchBtn(RoutesInfoData routesInfoData) {
@@ -491,22 +486,18 @@ public class MainActivity extends AppCompatActivity {
     private void addBus(final WayData wayData, int color, int icon, boolean zoom) {
         BusListElementData busListElement = new BusListElementData(wayData, icon, color, zoom);
         String code = busListElement.getCode();
-        routeColors.put(code, "" + color);
         displayedBuses.add(busListElement);
         displayedBusesAdapter.notifyDataSetChanged();
+        map.setColor(code, color);
 
-        addBusListener(code);
-    }
-
-    private void addBusToMap(String code) {
-        int color = Integer.parseInt(routeColors.get(code));
+        busService.subscribe(code);
     }
 
     private void updateBusOnMap(String code) {
     }
 
     private boolean freeBusResources(String code) {
-        removeBusListener(code);
+        busService.unsubscrive(code);
 
         boolean removed = false;
         for (int i = 0; i < displayedBuses.size(); i++) {

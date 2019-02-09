@@ -7,14 +7,13 @@ import android.os.Message;
 import java.util.HashSet;
 import java.util.Set;
 
+import info.nskgortrans.maps.Constants;
 import info.nskgortrans.maps.Data.RoutesInfoData;
 import info.nskgortrans.maps.Data.TrassData;
 import info.nskgortrans.maps.Utils;
 
 public class SyncService implements ISyncService {
     public static final long SYNC_VALID_FOR = 60 * 60 * 24;
-    public static final String ROUTES_INFO_TSP = "routes-info-tsp";
-    public static final String TRASS_INFO_TSP = "routes-info-tsp";
     public static final int ROUTES_SYNC_DATA_WHAT = 1;
     public static final int TRASS_SYNC_DATA_WHAT = 2;
 
@@ -42,11 +41,11 @@ public class SyncService implements ISyncService {
     }
 
     @Override
-    public Thread syncRoutesInfo() {
-        return (new Thread() {
+    public void syncRoutesInfo() {
+        (new Thread() {
             @Override
             public void run() {
-                String key = ROUTES_INFO_TSP;
+                String key = Constants.ROUTES_INFO_TSP;
                 long timestamp = utils.getUnixTsp();
                 long tsp = pref.getLong(key, 0L);
                 String hash = "";
@@ -73,19 +72,19 @@ public class SyncService implements ISyncService {
                     // TODO: display a message "Failed to load"
                 }
             }
-        });
+        }).start();
     }
 
     @Override
-    public Thread syncTrassInfo(final String code) {
+    public void syncTrassInfo(final String code) {
         if (trassesInSync.contains(code)) {
-            return null;
+            return;
         }
         trassesInSync.add(code);
-        return (new Thread() {
+        (new Thread() {
             @Override
             public void run() {
-                String key = TRASS_INFO_TSP + code;
+                String key = Constants.TRASS_INFO_TSP + code;
                 long tsp = pref.getLong(key, 0L);
                 long timestamp = utils.getUnixTsp();
                 String hash = "";
@@ -112,6 +111,6 @@ public class SyncService implements ISyncService {
                 }
                 trassesInSync.remove(code);
             }
-        });
+        }).start();
     }
 }

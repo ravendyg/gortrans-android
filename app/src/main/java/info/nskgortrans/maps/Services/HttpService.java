@@ -8,12 +8,13 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
+import info.nskgortrans.maps.Constants;
 import info.nskgortrans.maps.Data.TrassData;
 import info.nskgortrans.maps.Data.RoutesInfoData;
 
 public class HttpService implements IHttpService {
-    private static final String BASE_URL = "http://192.168.1.67:3023";
     private String apiKey = "";
+    private final String BASE_URL = Constants.HTTP_PREFIX + Constants.BASE_URL;
 
     public HttpService(String apiKey) {
         this.apiKey = apiKey;
