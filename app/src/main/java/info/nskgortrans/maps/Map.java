@@ -36,13 +36,12 @@ import java.util.Iterator;
 import java.util.List;
 
 import info.nskgortrans.maps.Data.BusListElementData;
-import info.nskgortrans.maps.Data.StopData;
 import info.nskgortrans.maps.Data.TrassData;
 import info.nskgortrans.maps.Data.WayPointData;
 import info.nskgortrans.maps.DataClasses.BusInfo;
 import info.nskgortrans.maps.DataClasses.BusRoute;
 import info.nskgortrans.maps.DataClasses.StopInfo;
-import info.nskgortrans.maps.DataClasses.StopMarker;
+import info.nskgortrans.maps.MapClasses.StopOnMap;
 import info.nskgortrans.maps.DataClasses.UpdateParcel;
 
 public class Map {
@@ -66,11 +65,10 @@ public class Map {
     private HashMap<String, Integer> routeColors;
 
     // data
-    private HashMap<String, StopInfo> stopsData;
-    private HashMap<String, HashSet<String>> busStops = new HashMap<>();
+    private HashMap<String, StopOnMap> allStops = new HashMap<>();
+    private HashMap<String, HashSet<StopOnMap>> busCodeToStops = new HashMap<>();
     private HashMap<String, BusRoute> busRoutes = new HashMap<>();
     // stop markers on the map with corresponding routes counter
-    private HashMap<String, StopMarker> stopsOnMap = new HashMap<>();
     private HashMap<String, Polyline> busRoutesOnMap = new HashMap<>();
     private HashSet<String> routeDisplayed = new HashSet<>();
 
@@ -128,7 +126,7 @@ public class Map {
             }
         });
     }
-
+/*
     public void loadStops(
             HashMap<String, StopInfo> stopsData,
             HashMap<String, HashSet<String>> busStops
@@ -142,7 +140,7 @@ public class Map {
         this.stopsData = stopsData;
         this.busStops = busStops;
     }
-
+*/
 
     public void saveState() {
         try { // save current map position and zoom
@@ -200,40 +198,37 @@ public class Map {
 
     public void upsertBusMain(final BusListElementData busListElementData, final TrassData trassData) {
         String code = busListElementData.getCode();
-        List<WayPointData> waypoints = trassData.getWaypoints();
-//        List<StopData> stops = trassData.getStops();
-        int color = routeColors.get(code);
+
+        routeDisplayed.add(code);
+        addPolyline(code, trassData);
+        addBusStops(code, trassData);
+        ensureCorrectMarkerZindex();
+        ensureBusesDisplayed(code);
+
         if (busListElementData.isZoom()) {
             nextToZoomOn = code;
             busListElementData.disableZoom();
         }
 
-        addPolyline(code, waypoints);
-//        addBusStops(code);
-//        tryToZoom();
+        tryToZoom();
         map.invalidate();
-    }
-
-    public void updateBusRoute(final String code, final BusRoute route) {
-        busRoutes.put(code, route);
-        if (busRoutesOnMap.containsKey(code)) {
-            // replace the old polyline with a new one
-        }
     }
 
     public void removeBus(final String busCode) {
+        routeDisplayed.remove(busCode);
+        removeBusMarker(busCode, null);
         removeBusStops(busCode);
         removePolyline(busCode);
-        removeBusMarker(busCode, null);
         map.invalidate();
     }
 
-    // TODO: make sure route line is always under the bus markers
-    public void addPolyline(String busCode, List<WayPointData> points) {
+    public void addPolyline(final String busCode, final TrassData trassData) {
+        removePolyline(busCode);
+        List<WayPointData> waypoints = trassData.getWaypoints();
         removePolyline(busCode);
         Polyline poly = new Polyline();
         List<GeoPoint> geoPoints = new ArrayList<>();
-        for (WayPointData wayPointData : points) {
+        for (WayPointData wayPointData : waypoints) {
             geoPoints.add(new GeoPoint(wayPointData.getLat(), wayPointData.getLng()));
         }
 
@@ -242,10 +237,7 @@ public class Map {
         poly.setColor(ContextCompat.getColor(ctx, color));
         map.getOverlays().add(poly);
         busRoutesOnMap.put(busCode, poly);
-//        resetStopAndBusMarkers();
         map.invalidate();
-
-        tryToZoom();
     }
 
     private void removePolyline(String code) {
@@ -259,6 +251,7 @@ public class Map {
         Iterator<String> busCodeIterator = parcels.keySet().iterator();
         while (busCodeIterator.hasNext()) {
             String busCode = busCodeIterator.next();
+            boolean routeAlreadyDisplayed = routeDisplayed.contains(busCode);
             UpdateParcel parcel = parcels.get(busCode);
             HashMap<String, Marker> buses;
             if (!busMarkers.containsKey(busCode)) {
@@ -271,10 +264,14 @@ public class Map {
             Iterator<String> addIterator = parcel.add.keySet().iterator();
             while (addIterator.hasNext()) {
                 String graph = addIterator.next();
-                buses.put(graph, busMarkerFactory(
+                Marker marker = busMarkerFactory(
                         busCode,
                         parcel.add.get(graph)
-                ));
+                );
+                if (routeAlreadyDisplayed) {
+                    map.getOverlays().add(marker);
+                }
+                buses.put(graph, marker);
             }
             // remove
             for (String graph : parcel.remove) {
@@ -291,40 +288,89 @@ public class Map {
         map.invalidate();
     }
 
-    private void addBusStops(final String code) {
-        HashSet<String> stops = busStops.get(code);
-        if (stops == null) {
-            return;
+    private void ensureCorrectMarkerZindex() {
+        List<Overlay> routes = new ArrayList<>();
+        List<Overlay> stops = new ArrayList<>();
+        List<Overlay> buses = new ArrayList<>();
+        List<Overlay> overlays = map.getOverlays();
+        while (overlays.size() > 0) {
+            Overlay overlay = overlays.remove(0);
+            // TODO: Can it be done simpler?
+            String name = overlay.getClass().getName();
+            if (name.equals("org.osmdroid.views.overlay.Polyline")) {
+                routes.add(overlay);
+            } else if (name.equals("org.osmdroid.views.overlay.Marker")) {
+                if (((Marker) overlay).getImage() == stopImage ) {
+                    stops.add(overlay);
+                } else {
+                    buses.add(overlay);
+                }
+            }
         }
+        for (Overlay over : routes) {
+            overlays.add(over);
+        }
+        for (Overlay over : stops) {
+            overlays.add(over);
+        }
+        for (Overlay over : buses) {
+            overlays.add(over);
+        }
+    }
 
-        for (String id : stops) {
-            if (stopsOnMap.containsKey(id)) {
-                stopsOnMap.get(id).addBus(code);
-            } else {
-                stopsOnMap.put(
-                        id,
-                        new StopMarker(stopMarkerFactory(stopsData.get(id)), code)
-                );
+    private void ensureBusesDisplayed(String busCode) {
+        HashMap<String, Marker> markers = busMarkers.get(busCode);
+        if (markers != null) {
+            List<Overlay> overlays = map.getOverlays();
+            for (Marker marker : markers.values()) {
+                if (!overlays.contains(marker)) {
+                    overlays.add(marker);
+                }
             }
         }
     }
 
-    private void resetStopAndBusMarkers() {
-        List<Overlay> over = map.getOverlays();
-        Iterator<StopMarker> stopIterator = stopsOnMap.values().iterator();
-        while (stopIterator.hasNext()) {
-            Marker mr = stopIterator.next().getMarker();
-            over.remove(mr);
-            over.add(mr);
-        }
-        Iterator<HashMap<String, Marker>> busGroupIterator = busMarkers.values().iterator();
-        while (busGroupIterator.hasNext()) {
-            Iterator<Marker> busIterator = busGroupIterator.next().values().iterator();
-            while (busIterator.hasNext()) {
-                Marker mr = busIterator.next();
-                over.remove(mr);
-                over.add(mr);
+    private void addBusStops(final String code, TrassData trassData) {
+        List<StopInfo> stopInfoList = trassData.getStops();
+        HashSet<StopOnMap> busStops = new HashSet<>();
+        busCodeToStops.put(code, busStops);
+        for (StopInfo stopInfo : stopInfoList) {
+            String id = stopInfo.getId();
+            StopOnMap stopOnMap = allStops.get(id);
+            if (stopOnMap == null) {
+                Marker marker = stopMarkerFactory(stopInfo);
+                stopOnMap = new StopOnMap(stopInfo, marker);
+                allStops.put(id, stopOnMap);
             }
+            stopOnMap.addBus(code);
+            busStops.add(stopOnMap);
+        }
+    }
+
+    private void removeBusStops(final String code) {
+        boolean popupOpened = true;
+        HashSet<StopOnMap> stopsOnMap = busCodeToStops.get(code);
+        busCodeToStops.remove(code);
+        if (stopsOnMap == null) {
+            return;
+        }
+        for (StopOnMap stopOnMap : stopsOnMap) {
+            int busesLeft = stopOnMap.removeBus(code);
+            if (busesLeft > 0) {
+                // keep the stop
+                continue;
+            }
+            Marker marker = stopOnMap.getMarker();
+            if (popupOpened) {
+                // need a marker, probably there is a way to get this info from the map itself
+                InfoWindow wn = marker.getInfoWindow();
+                if (wn.isOpen()) {
+                    wn.close();
+                }
+                popupOpened = false;
+            }
+            marker.remove(map);
+            allStops.remove(stopOnMap.getId());
         }
     }
 
@@ -359,35 +405,6 @@ public class Map {
         }
     }
 
-    private void removeBusStops(final String code) {
-        boolean closed = false;
-        HashSet<String> stops = busStops.get(code);
-        if (stops == null) {
-            return;
-        }
-        for (String stopId : stops) {
-            if (stopsOnMap.containsKey(stopId)) {
-                StopMarker temp = stopsOnMap.get(stopId);
-                if (!closed) {
-                    // since right now it's a bit of problem to detect where popup opened always close
-                    InfoWindow wn = temp.getMarker().getInfoWindow();
-                    if (wn.isOpen()) {
-                        wn.close();
-                    }
-                    closed = true;
-                }
-                int left = temp.removeBus(code);
-                if (left == 0) {
-                    Marker mr = temp.getMarker();
-                    mr.remove(map);
-                    stopsOnMap.remove(stopId);
-                }
-            }
-        }
-
-        removeBusesByRoute(code);
-    }
-
 
     private void hideUserInfo() {
         if (userInfoWindow != null && userInfoWindow.isOpen()) {
@@ -395,13 +412,12 @@ public class Map {
         }
     }
 
-
     private Marker stopMarkerFactory(StopInfo info) {
         Marker mr = new Marker(map);
-        mr.setPosition(new GeoPoint(info.lat, info.lng));
+        mr.setPosition(new GeoPoint(info.getLat(), info.getLng()));
         mr.setIcon(stopImage);
         mr.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER);
-        mr.setTitle(info.name);
+        mr.setTitle(info.getName());
         map.getOverlays().add(mr);
         return mr;
     }
@@ -414,7 +430,6 @@ public class Map {
         mr.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER);
         mr.setRotation(transformAzimuth(info.azimuth));
         mr.setTitle(info.title);
-        map.getOverlays().add(mr);
         return mr;
     }
 
@@ -424,8 +439,8 @@ public class Map {
             List<Overlay> over = map.getOverlays();
 
             if (graph != null) {
-                if (mrs.containsKey(graph)) {
-                    Marker marker = mrs.get(graph);
+                Marker marker = mrs.get(graph);
+                if (marker != null) {
                     over.remove(marker);
                 }
             } else {
@@ -434,17 +449,6 @@ public class Map {
                 }
             }
             busMarkers.remove(busCode);
-        }
-    }
-
-    private void removeBusesByRoute(String busCode) {
-        if (busMarkers.containsKey(busCode)) {
-            HashMap<String, Marker> mrs = busMarkers.get(busCode);
-            Iterator<Marker> mrsIterator = mrs.values().iterator();
-            while (mrsIterator.hasNext()) {
-                Marker marker = mrsIterator.next();
-                map.getOverlays().remove(marker);
-            }
         }
     }
 

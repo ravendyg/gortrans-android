@@ -64,34 +64,6 @@ public class JSONParser {
         return wayGroups;
     }
 
-    public static HashMap<String, StopInfo> extractStops(JSONObject input) {
-        HashMap<String, StopInfo> out = new HashMap<String, StopInfo>();
-        Iterator<String> stopIds = input.keys();
-        while (stopIds.hasNext()) {
-            try {
-                String _id = stopIds.next();
-                JSONObject temp = input.getJSONObject(_id);
-
-                StopInfo stopInfo = new StopInfo(_id, Double.parseDouble(temp.getString("lat")), Double.parseDouble(temp.getString("lng")));
-                if (temp.has("n")) {
-                    stopInfo.setName(temp.getString("n"));
-                }
-                if (temp.has("vehicles")) {
-                    Iterator<String> vehicles = temp.getJSONObject("vehicles").keys();
-                    while (vehicles.hasNext()) {
-                        stopInfo.setBus(vehicles.next());
-                    }
-                }
-
-                out.put(_id, stopInfo);
-            } catch (JSONException err) {
-                Log.e(LOG_TAG, "error", err);
-            }
-        }
-
-        return out;
-    }
-
     public static HashMap<String, HashSet<String>> extractBusStops(JSONObject input) {
         HashMap<String, HashSet<String>> out = new HashMap<String, HashSet<String>>();
         Iterator<String> vehicles = input.keys();

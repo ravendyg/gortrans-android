@@ -286,7 +286,6 @@ public class BusPositionService extends Service {
             wayGroups = JSONParser.getWayGroups(routesData);
             routesDataStr = routesData.toString();
 
-            stops = JSONParser.extractStops(stopsData.getJSONObject("stops"));
             busStops = JSONParser.extractBusStops(stopsData.getJSONObject("busStops"));
 
             sendDataToMain();

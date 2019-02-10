@@ -7,17 +7,19 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
+import info.nskgortrans.maps.DataClasses.StopInfo;
+
 public class TrassData implements Serializable {
     private String code;
     private List<WayPointData> waypoints;
-    private List<StopData> stops;
+    private List<StopInfo> stops;
     private String hash;
 
     public TrassData(String code, JSONObject input) {
+        this.code = code;
         try {
             JSONArray data = input.getJSONArray("data");
             this.hash = input.getString("hash");
-            this.code = code;
             waypoints = new ArrayList<>();
             stops = new ArrayList<>();
             for (int i = 0; i < data.length(); i++) {
@@ -28,9 +30,9 @@ public class TrassData implements Serializable {
                 waypoints.add(wayPointData);
                 if (wayPoint.has("n") && wayPoint.has("i")) {
                     String name = wayPoint.getString("n");
-                    int id = wayPoint.getInt("i");
-                    StopData stopData = new StopData(id, name, wayPointData);
-                    stops.add(stopData);
+                    String id = wayPoint.getString("i");
+                    StopInfo stopInfo = new StopInfo(id, name, lat, lng);
+                    stops.add(stopInfo);
                 }
 
             }
@@ -47,7 +49,7 @@ public class TrassData implements Serializable {
         return hash;
     }
 
-    public List<StopData> getStops() {
+    public List<StopInfo> getStops() {
         return stops;
     }
 

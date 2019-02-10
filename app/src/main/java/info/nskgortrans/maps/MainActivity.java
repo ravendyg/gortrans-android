@@ -191,9 +191,6 @@ public class MainActivity extends AppCompatActivity {
 
         map = new Map();
         map.init(context, findViewById(R.id.map), pref);
-
-        startListenForService();
-        startService(new Intent(this, BusPositionService.class));
     }
 
     private void startTrackingUser() {
@@ -363,46 +360,6 @@ public class MainActivity extends AppCompatActivity {
     private void updateState(final String newStateStr) {
 
     }
-
-
-    private void startListenForService() {
-        if (serviceReceiver == null) {
-            serviceReceiver = new BroadcastReceiver() {
-                @Override
-                public void onReceive(Context context, Intent intent) {
-                    Log.e(LOG_TAG, "receive broadcast");
-                    String eventType = intent.getStringExtra("event");
-          /*
-          if (eventType.equals(("data")))
-          {
-            routesDataStr = intent.getStringExtra("way-groups");
-            map.loadStops(
-              (HashMap<String, StopInfo>) intent.getSerializableExtra("stops"),
-              (HashMap<String, HashSet<String>>) intent.getSerializableExtra("busStops")
-            );
-            loadWayGrous();
-            findViewById(R.id.bus_search_btn).setVisibility(View.VISIBLE);
-            replayDisplayed();
-          }
-          else
-          */
-                    if (eventType.equals("route")) {
-                        map.updateBusRoute(intent.getStringExtra("code"),
-                                (BusRoute) intent.getSerializableExtra("data"));
-                    } else if (eventType.equals("state-update")) {
-                        updateState(intent.getStringExtra("new-state"));
-                    } else if (eventType.equals("bus-update")) {
-                        HashMap<String, UpdateParcel> parcels =
-                                (HashMap<String, UpdateParcel>) intent.getSerializableExtra("parcels");
-                        map.updateBusMarkers(parcels);
-                    }
-                }
-            };
-            LocalBroadcastManager.getInstance(context).
-                    registerReceiver(serviceReceiver, new IntentFilter("info.nskgortrans.maps.main.activity"));
-        }
-    }
-
 
     @Override
     public void onResume() {

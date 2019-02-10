@@ -11,27 +11,31 @@ import java.util.HashSet;
  */
 
 public class StopInfo implements Serializable {
-    public String id;
-    public double lat;
-    public double lng;
-    public String name;
-    public HashSet<String> buses;
+    private String id;
+    private double lat;
+    private double lng;
+    private String name;
 
-
-    public StopInfo(String _id, double _lat, double _lng) {
-        id = _id;
-        lat = _lat;
-        lng = _lng;
-        name = null;
-        buses = new HashSet<String>();
+    public StopInfo(String id, String name, double lat, double lng) {
+        this.id = id;
+        this.name = name;
+        this.lat = lat;
+        this.lng = lng;
     }
 
-    public void setName(String _name) {
-        name = _name;
+    public String getName() {
+        return name;
     }
 
-    public void setBus(String code) {
-        buses.add(code);
+    public String getId() {
+        return id;
     }
 
+    public double getLat() {
+        return lat;
+    }
+
+    public double getLng() {
+        return lng;
+    }
 }
