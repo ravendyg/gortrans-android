@@ -61,7 +61,12 @@ public class SearchBusDialog extends Dialog {
 
     private HistoryData history;
 
-    public SearchBusDialog(final Context context, final RoutesInfoData routesInfoData, final IStorageService storageService, final Utils utils) {
+    public SearchBusDialog(
+            final Context context,
+            final RoutesInfoData routesInfoData,
+            final IStorageService storageService,
+            final Utils utils
+    ) {
         super(context);
 
         this.context = context;

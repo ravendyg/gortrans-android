@@ -12,10 +12,8 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.Set;
 
 import info.nskgortrans.maps.DataClasses.BusInfo;
-import info.nskgortrans.maps.DataClasses.StopInfo;
 import info.nskgortrans.maps.DataClasses.UpdateParcel;
 import info.nskgortrans.maps.DataClasses.Way;
 import info.nskgortrans.maps.DataClasses.WayGroup;

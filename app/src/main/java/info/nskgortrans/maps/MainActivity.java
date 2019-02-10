@@ -35,12 +35,10 @@ import java.util.HashSet;
 import info.nskgortrans.maps.Adapters.BusListAdapter;
 import info.nskgortrans.maps.Data.BusListElementData;
 import info.nskgortrans.maps.Data.TrassData;
-import info.nskgortrans.maps.DataClasses.BusRoute;
 import info.nskgortrans.maps.Data.RoutesInfoData;
 import info.nskgortrans.maps.DataClasses.StopInfo;
 import info.nskgortrans.maps.DataClasses.UpdateParcel;
 import info.nskgortrans.maps.Data.WayData;
-import info.nskgortrans.maps.Services.BusPositionService;
 import info.nskgortrans.maps.Services.BusService;
 import info.nskgortrans.maps.Services.HttpService;
 import info.nskgortrans.maps.Services.IHttpService;
@@ -73,10 +71,6 @@ public class MainActivity extends AppCompatActivity {
     private static Handler updateHandler;
 
     RoutesInfoData routesInfoData;
-//    private ArrayList<WayGroup> wayGroups;
-//    private String routesDataStr = "";
-
-    private BroadcastReceiver serviceReceiver = null;
 
     private Dialog searchBusDialog = null;
 
@@ -324,16 +318,23 @@ public class MainActivity extends AppCompatActivity {
 
     private void replayDisplayed() {
         try {
-//      String displayed = pref.getString("displayed", "");
-//      String[] codes = displayed.split("\\$");
-//      for (String code : codes)
-//      {
-//        String codeChunks[] = code.split("\\-");
-//        if (codeChunks.length == 4)
-//        {
-//          selectBus(code, codeChunks[3], Integer.parseInt(codeChunks[0]), false);
-//        }
-//      }
+            String displayed = pref.getString("displayed", "");
+            String[] codes = displayed.split("\\$");
+            for (String code : codes) {
+                try {
+                    String codeChunks[] = code.split("\\-");
+                    int type = Integer.parseInt(codeChunks[0]);
+                    String marsh = codeChunks[1];
+                    for (WayData wayData : routesInfoData.getWaysByType(type)) {
+                        if (wayData.getMarsh().equals(marsh)) {
+                            selectBus(wayData, false);
+                            continue;
+                        }
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
         } catch (Exception err) {
             Log.e(LOG_TAG, "parse displayed", err);
         }
@@ -344,21 +345,6 @@ public class MainActivity extends AppCompatActivity {
             searchBusDialog.cancel();
             searchBusDialog = null;
         }
-    }
-
-    private void showSearchBtn(RoutesInfoData routesInfoData) {
-//        map.loadStops(
-//                (HashMap<String, StopInfo>) intent.getSerializableExtra("stops"),
-//                (HashMap<String, HashSet<String>>) intent.getSerializableExtra("busStops")
-//        );
-        this.routesInfoData = routesInfoData;
-        findViewById(R.id.bus_search_btn).setVisibility(View.VISIBLE);
-        replayDisplayed();
-    }
-
-
-    private void updateState(final String newStateStr) {
-
     }
 
     @Override
@@ -380,17 +366,6 @@ public class MainActivity extends AppCompatActivity {
         super.onDestroy();
 
         removeDialog();
-
-        if (!isServiceRunning(BusPositionService.class)) {
-            stopService(new Intent(this, BusPositionService.class));
-        }
-
-        Log.e(LOG_TAG, "pause");
-        if (serviceReceiver != null) {
-            LocalBroadcastManager.getInstance(context)
-                    .unregisterReceiver(serviceReceiver);
-            serviceReceiver = null;
-        }
     }
 
     public void zoomToUser(View bntView) {
@@ -408,18 +383,6 @@ public class MainActivity extends AppCompatActivity {
         );
     }
 
-
-    private boolean isServiceRunning(Class<?> serviceClass) {
-        ActivityManager manager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
-        for (RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
-            if (serviceClass.getName().equals(service.service.getClassName())) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-
     @Override
     public void onStart() {
         super.onStart();
@@ -430,16 +393,6 @@ public class MainActivity extends AppCompatActivity {
         super.onStop();
     }
 
-
-    private void requestBusOnMap(String busCode) {
-        Intent intent =
-                new Intent("info.nskgortrans.maps.gortrans.socket-service")
-                        .putExtra("busCode", busCode)
-                        .putExtra("event", "request add bus");
-
-        sendBroadcast(intent);
-    }
-
     private void addBus(final WayData wayData, int color, int icon, boolean zoom) {
         BusListElementData busListElement = new BusListElementData(wayData, icon, color, zoom);
         String code = busListElement.getCode();
@@ -448,9 +401,6 @@ public class MainActivity extends AppCompatActivity {
         map.setColor(code, color);
 
         busService.subscribe(code);
-    }
-
-    private void updateBusOnMap(String code) {
     }
 
     private boolean freeBusResources(String code) {

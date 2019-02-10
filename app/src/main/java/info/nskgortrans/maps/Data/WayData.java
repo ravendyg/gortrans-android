@@ -20,6 +20,12 @@ public class WayData implements Serializable {
         this.type = type;
     }
 
+    public WayData(String code) throws IndexOutOfBoundsException {
+        String codeChunks[] = code.split("\\-");
+        this.type = Integer.parseInt(codeChunks[0]);
+        this.marsh = codeChunks[1];
+    }
+
     public int getType() {
         return type;
     }
@@ -30,5 +36,9 @@ public class WayData implements Serializable {
 
     public String getCode() {
         return type + "-" + marsh + "-W-" + name;
+    }
+
+    public String getMarsh() {
+        return marsh;
     }
 }
