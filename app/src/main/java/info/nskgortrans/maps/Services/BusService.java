@@ -1,6 +1,8 @@
 package info.nskgortrans.maps.Services;
 
+import org.java_websocket.client.DefaultSSLWebSocketClientFactory;
 import org.java_websocket.client.WebSocketClient;
+import org.java_websocket.drafts.Draft_17;
 import org.java_websocket.handshake.ServerHandshake;
 import org.json.JSONObject;
 
@@ -8,9 +10,14 @@ import android.os.Handler;
 import android.os.Message;
 
 import java.net.URI;
+import java.security.KeyManagementException;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSocketFactory;
 
 import info.nskgortrans.maps.Constants;
 import info.nskgortrans.maps.DataClasses.EWsRequestType;
@@ -41,6 +48,7 @@ public class BusService implements IBusService {
                 try {
                     URI uri = new URI(BASE_URL + "/ws?api_key=" + apiKey + "&asd=dsf");
                     System.out.println(BASE_URL + "/ws");
+
                     client = new WebSocketClient(uri) {
                         @Override
                         public void onOpen(ServerHandshake serverHandshake) {
@@ -95,6 +103,17 @@ public class BusService implements IBusService {
                             e.printStackTrace();
                         }
                     };
+                    SSLContext sslContext = null;
+                    try {
+                        sslContext = SSLContext.getInstance( "TLS" );
+                        sslContext.init( null, null, null ); // will use java's default key and trust store which is sufficient unless you deal with self-signed certificates
+                    } catch (NoSuchAlgorithmException e) {
+                        e.printStackTrace();
+                    } catch (KeyManagementException e) {
+                        e.printStackTrace();
+                    }
+
+                    client.setWebSocketFactory( new DefaultSSLWebSocketClientFactory( sslContext ) );
                     client.connect();
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -132,6 +151,37 @@ public class BusService implements IBusService {
             json.put("type", EWsRequestType.UNSUBSCRIBE);
             json.put("code", code);
             this.client.send(json.toString());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    public void pause() {
+        try {
+            for (String code : subscriptions) {
+                JSONObject json = new JSONObject();
+                json.put("type", EWsRequestType.UNSUBSCRIBE);
+                json.put("code", code);
+                this.client.send(json.toString());
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    public void resume() {
+        try {
+            for (String code : subscriptions) {
+                JSONObject json = new JSONObject();
+                json.put("type", EWsRequestType.SUBSCRIBE);
+                json.put("code", code);
+                String message = json.toString();
+                if (client != null) {
+                    this.client.send(message);
+                }
+            }
         } catch (Exception e) {
             e.printStackTrace();
         }

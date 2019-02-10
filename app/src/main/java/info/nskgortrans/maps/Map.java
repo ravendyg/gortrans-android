@@ -263,6 +263,7 @@ public class Map {
                     removeBusMarker(busCode, graph);
                 }
                 buses = new HashMap<>();
+                busMarkers.put(busCode, buses);
             } else {
                 buses = busMarkers.get(busCode);
             }
@@ -299,6 +300,12 @@ public class Map {
 
     public void dropBus(final String busCode) {
         removeBusMarker(busCode, null);
+    }
+
+    public void dropBuses() {
+        for (String code : routeDisplayed) {
+            dropBus(code);
+        }
     }
 
     private void ensureCorrectMarkerZindex() {
@@ -417,7 +424,6 @@ public class Map {
             nextToZoomOn = null;
         }
     }
-
 
     private void hideUserInfo() {
         if (userInfoWindow != null && userInfoWindow.isOpen()) {

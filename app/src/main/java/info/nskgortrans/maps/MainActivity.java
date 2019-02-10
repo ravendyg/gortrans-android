@@ -400,11 +400,22 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public void onStart() {
         super.onStart();
+
+        if (busService != null) {
+            busService.resume();
+        }
     }
 
     @Override
     public void onStop() {
         super.onStop();
+
+        if (busService != null) {
+            busService.pause();
+        }
+        if (map != null) {
+            map.dropBuses();
+        }
     }
 
     private void addBus(final WayData wayData, int color, int icon, boolean zoom) {
