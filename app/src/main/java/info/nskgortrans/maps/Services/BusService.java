@@ -3,11 +3,14 @@ package info.nskgortrans.maps.Services;
 import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.handshake.ServerHandshake;
 import org.json.JSONObject;
+
 import android.os.Handler;
 import android.os.Message;
 
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 
 import info.nskgortrans.maps.Constants;
 import info.nskgortrans.maps.DataClasses.EWsRequestType;
@@ -17,10 +20,12 @@ import info.nskgortrans.maps.JSONParser;
 public class BusService implements IBusService {
     public static final int BUS_UPDATE_WHAT = 3;
 
-    private WebSocketClient client;
+    private WebSocketClient client = null;
     private final String BASE_URL = Constants.WS_PREFIX + Constants.BASE_URL;
     private final String apiKey;
     private final Handler handler;
+    private final ArrayList<String> messages = new ArrayList<>();
+    private HashSet<String> subscriptions = new HashSet<>();
 
     public BusService(Handler handler, String apiKey) {
         this.handler = handler;
@@ -30,15 +35,16 @@ public class BusService implements IBusService {
     @Override
     public void start() {
         (new Thread() {
-            @Override
-            public void run() {
+            private void createWS() {
                 try {
                     URI uri = new URI(BASE_URL + "/ws?api_key=" + apiKey + "&asd=dsf");
                     System.out.println(BASE_URL + "/ws");
                     client = new WebSocketClient(uri) {
                         @Override
                         public void onOpen(ServerHandshake serverHandshake) {
-
+                            for (String code : subscriptions) {
+                                subscribe(code);
+                            }
                         }
 
                         @Override
@@ -62,7 +68,13 @@ public class BusService implements IBusService {
 
                         @Override
                         public void onClose(int i, String s, boolean b) {
-//                    client.connect();
+                            try {
+                                Thread.sleep(5000);
+                                client = null;
+                                BusService.this.start();
+                            } catch (Exception e) {
+                                // don't expect to be interrupted
+                            }
                         }
 
                         @Override
@@ -75,16 +87,25 @@ public class BusService implements IBusService {
                     e.printStackTrace();
                 }
             }
+
+            @Override
+            public void run() {
+                createWS();
+            }
         }).start();
     }
 
     @Override
     public void subscribe(String code) {
         try {
+            subscriptions.add(code);
             JSONObject json = new JSONObject();
             json.put("type", EWsRequestType.SUBSCRIBE);
             json.put("code", code);
-            this.client.send(json.toString());
+            String message = json.toString();
+            if (client != null) {
+                this.client.send(message);
+            }
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -93,6 +114,7 @@ public class BusService implements IBusService {
     @Override
     public void unsubscrive(String code) {
         try {
+            subscriptions.remove(code);
             JSONObject json = new JSONObject();
             json.put("type", EWsRequestType.UNSUBSCRIBE);
             json.put("code", code);
