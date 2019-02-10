@@ -247,7 +247,7 @@ public class Map {
         }
     }
 
-    public void updateBusMarkers(HashMap<String, UpdateParcel> parcels) {
+    public void updateBusMarkers(HashMap<String, UpdateParcel> parcels, boolean reset) {
         Iterator<String> busCodeIterator = parcels.keySet().iterator();
         while (busCodeIterator.hasNext()) {
             String busCode = busCodeIterator.next();
@@ -257,6 +257,12 @@ public class Map {
             if (!busMarkers.containsKey(busCode)) {
                 buses = new HashMap<>();
                 busMarkers.put(busCode, buses);
+            } else if (reset) {
+                buses = busMarkers.get(busCode);
+                for (String graph : buses.keySet()) {
+                    removeBusMarker(busCode, graph);
+                }
+                buses = new HashMap<>();
             } else {
                 buses = busMarkers.get(busCode);
             }
@@ -273,6 +279,9 @@ public class Map {
                 }
                 buses.put(graph, marker);
             }
+            if (reset) {
+                continue;
+            }
             // remove
             for (String graph : parcel.remove) {
                 removeBusMarker(busCode, graph);
@@ -286,6 +295,10 @@ public class Map {
         }
 
         map.invalidate();
+    }
+
+    public void dropBus(final String busCode) {
+        removeBusMarker(busCode, null);
     }
 
     private void ensureCorrectMarkerZindex() {

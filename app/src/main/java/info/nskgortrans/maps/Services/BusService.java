@@ -19,6 +19,8 @@ import info.nskgortrans.maps.JSONParser;
 
 public class BusService implements IBusService {
     public static final int BUS_UPDATE_WHAT = 3;
+    public static final int BUS_RESET_WHAT = 4;
+    public static final int BUS_DROP_WHAT = 5;
 
     private WebSocketClient client = null;
     private final String BASE_URL = Constants.WS_PREFIX + Constants.BASE_URL;
@@ -52,15 +54,26 @@ public class BusService implements IBusService {
                             try {
                                 JSONObject socketMessage = new JSONObject(s);
                                 int type = socketMessage.getInt("type");
-                                if (type == EWsRequestType.STATE || type == EWsRequestType.UPDATE) {
-                                    JSONObject payload = socketMessage.getJSONObject("payload");
-                                    HashMap<String, UpdateParcel> parcels = JSONParser.parseUpdatedBus(payload);
-                                    if (parcels == null) {
-                                        return;
-                                    }
-                                    Message message = handler.obtainMessage(BUS_UPDATE_WHAT, parcels);
+                                int what;
+                                if (type == EWsRequestType.STATE) {
+                                    what = BUS_RESET_WHAT;
+                                } else if (type == EWsRequestType.UPDATE) {
+                                    what = BUS_UPDATE_WHAT;
+                                } else if (type == EWsRequestType.DROP) {
+                                    String code = socketMessage.getString("payload");
+                                    Message message = handler.obtainMessage(BUS_DROP_WHAT, code);
                                     handler.sendMessage(message);
+                                    return;
+                                } else {
+                                    return;
                                 }
+                                JSONObject payload = socketMessage.getJSONObject("payload");
+                                HashMap<String, UpdateParcel> parcels = JSONParser.parseUpdatedBus(payload);
+                                if (parcels == null) {
+                                    return;
+                                }
+                                Message message = handler.obtainMessage(what, parcels);
+                                handler.sendMessage(message);
                             } catch (Exception e) {
                                 e.printStackTrace();
                             }

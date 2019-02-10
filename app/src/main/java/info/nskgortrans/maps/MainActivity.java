@@ -128,7 +128,21 @@ public class MainActivity extends AppCompatActivity {
                     case BusService.BUS_UPDATE_WHAT: {
                         HashMap<String, UpdateParcel> parcels =
                                 (HashMap<String, UpdateParcel>) msg.obj;
-                        map.updateBusMarkers(parcels);
+                        map.updateBusMarkers(parcels, false);
+                        break;
+                    }
+
+                    case BusService.BUS_RESET_WHAT: {
+                        HashMap<String, UpdateParcel> parcels =
+                                (HashMap<String, UpdateParcel>) msg.obj;
+                        map.updateBusMarkers(parcels, true);
+                        break;
+                    }
+
+                    case BusService.BUS_DROP_WHAT: {
+                        String code = (String) msg.obj;
+                        map.dropBus(code);
+                        break;
                     }
                 }
                 return true;
