@@ -103,17 +103,6 @@ public class BusService implements IBusService {
                             e.printStackTrace();
                         }
                     };
-                    SSLContext sslContext = null;
-                    try {
-                        sslContext = SSLContext.getInstance( "TLS" );
-                        sslContext.init( null, null, null ); // will use java's default key and trust store which is sufficient unless you deal with self-signed certificates
-                    } catch (NoSuchAlgorithmException e) {
-                        e.printStackTrace();
-                    } catch (KeyManagementException e) {
-                        e.printStackTrace();
-                    }
-
-                    client.setWebSocketFactory( new DefaultSSLWebSocketClientFactory( sslContext ) );
                     client.connect();
                 } catch (Exception e) {
                     e.printStackTrace();
