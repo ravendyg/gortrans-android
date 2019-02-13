@@ -10,14 +10,9 @@ import android.os.Handler;
 import android.os.Message;
 
 import java.net.URI;
-import java.security.KeyManagementException;
-import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLSocketFactory;
 
 import info.nskgortrans.maps.Constants;
 import info.nskgortrans.maps.DataClasses.EWsRequestType;
@@ -25,9 +20,7 @@ import info.nskgortrans.maps.DataClasses.UpdateParcel;
 import info.nskgortrans.maps.JSONParser;
 
 public class BusService implements IBusService {
-    public static final int BUS_UPDATE_WHAT = 3;
-    public static final int BUS_RESET_WHAT = 4;
-    public static final int BUS_DROP_WHAT = 5;
+    public static final int BUS_STATE_WHAT = 3;
 
     private WebSocketClient client = null;
     private final String BASE_URL = Constants.WS_PREFIX + Constants.BASE_URL;
@@ -64,19 +57,15 @@ public class BusService implements IBusService {
                                 int type = socketMessage.getInt("type");
                                 int what;
                                 if (type == EWsRequestType.STATE) {
-                                    what = BUS_RESET_WHAT;
-                                } else if (type == EWsRequestType.UPDATE) {
-                                    what = BUS_UPDATE_WHAT;
-                                } else if (type == EWsRequestType.DROP) {
-                                    String code = socketMessage.getString("payload");
-                                    Message message = handler.obtainMessage(BUS_DROP_WHAT, code);
-                                    handler.sendMessage(message);
-                                    return;
+                                    what = BUS_STATE_WHAT;
                                 } else {
                                     return;
                                 }
                                 JSONObject payload = socketMessage.getJSONObject("payload");
-                                HashMap<String, UpdateParcel> parcels = JSONParser.parseUpdatedBus(payload);
+                                String id = payload.getString("id");
+                                confirm(id);
+                                JSONObject data = payload.getJSONObject("data");
+                                HashMap<String, UpdateParcel> parcels = JSONParser.parseUpdatedBus(data);
                                 if (parcels == null) {
                                     return;
                                 }
@@ -170,6 +159,20 @@ public class BusService implements IBusService {
                 if (client != null) {
                     this.client.send(message);
                 }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void confirm(String id) {
+        try {
+            JSONObject json = new JSONObject();
+            json.put("type", EWsRequestType.CONFIRM);
+            json.put("confirmedId", id);
+            String message = json.toString();
+            if (client != null) {
+                this.client.send(message);
             }
         } catch (Exception e) {
             e.printStackTrace();

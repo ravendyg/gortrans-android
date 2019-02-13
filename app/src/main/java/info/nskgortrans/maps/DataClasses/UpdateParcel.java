@@ -9,9 +9,11 @@ import java.util.HashMap;
  */
 
 public class UpdateParcel implements Serializable {
-    public HashMap<String, BusInfo> add = new HashMap();
-    public String[] remove = {};
-    public HashMap<String, BusInfo> update = new HashMap();
+    public String id;
+    public HashMap<String, BusInfo> add;
+    public String[] remove;
+    public HashMap<String, BusInfo> update;
+    public HashMap<String, BusInfo> reset;
 
     public UpdateParcel() {
 

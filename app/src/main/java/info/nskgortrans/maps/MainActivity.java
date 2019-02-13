@@ -125,23 +125,10 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public boolean handleMessage(Message msg) {
                 switch (msg.what) {
-                    case BusService.BUS_UPDATE_WHAT: {
+                    case BusService.BUS_STATE_WHAT: {
                         HashMap<String, UpdateParcel> parcels =
                                 (HashMap<String, UpdateParcel>) msg.obj;
                         map.updateBusMarkers(parcels, false);
-                        break;
-                    }
-
-                    case BusService.BUS_RESET_WHAT: {
-                        HashMap<String, UpdateParcel> parcels =
-                                (HashMap<String, UpdateParcel>) msg.obj;
-                        map.updateBusMarkers(parcels, true);
-                        break;
-                    }
-
-                    case BusService.BUS_DROP_WHAT: {
-                        String code = (String) msg.obj;
-                        map.dropBus(code);
                         break;
                     }
                 }

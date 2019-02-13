@@ -253,34 +253,40 @@ public class Map {
             String busCode = busCodeIterator.next();
             boolean routeAlreadyDisplayed = routeDisplayed.contains(busCode);
             UpdateParcel parcel = parcels.get(busCode);
+            boolean _reset = reset || parcel.reset != null;
             HashMap<String, Marker> buses;
-            if (!busMarkers.containsKey(busCode)) {
-                buses = new HashMap<>();
-                busMarkers.put(busCode, buses);
-            } else if (reset) {
+            if (!busMarkers.containsKey(busCode) || _reset) {
                 buses = busMarkers.get(busCode);
-                for (String graph : buses.keySet()) {
-                    removeBusMarker(busCode, graph);
+                if (buses != null) {
+                    for (String graph : buses.keySet()) {
+                        removeBusMarker(busCode, graph);
+                    }
                 }
                 buses = new HashMap<>();
                 busMarkers.put(busCode, buses);
+                map.invalidate();
             } else {
                 buses = busMarkers.get(busCode);
             }
-            // add
-            Iterator<String> addIterator = parcel.add.keySet().iterator();
-            while (addIterator.hasNext()) {
-                String graph = addIterator.next();
+            HashMap<String, BusInfo> add;
+            if (parcel.reset != null) {
+                // reset
+                add = parcel.reset;
+            } else {
+                // add
+                add = parcel.add;
+            }
+            for (String graph : add.keySet()) {
                 Marker marker = busMarkerFactory(
                         busCode,
-                        parcel.add.get(graph)
+                        add.get(graph)
                 );
                 if (routeAlreadyDisplayed) {
                     map.getOverlays().add(marker);
                 }
                 buses.put(graph, marker);
             }
-            if (reset) {
+            if (_reset) {
                 continue;
             }
             // remove
@@ -467,7 +473,6 @@ public class Map {
                     over.remove(marker);
                 }
             }
-            busMarkers.remove(busCode);
         }
     }
 

@@ -114,13 +114,13 @@ public class JSONParser {
         return out;
     }
 
-    public static HashMap<String, UpdateParcel> parseUpdatedBus(JSONObject ob) {
+    public static HashMap<String, UpdateParcel> parseUpdatedBus(JSONObject data) {
         HashMap<String, UpdateParcel> out = new HashMap<>();
         try {
-            Iterator<String> keys = ob.keys();
+            Iterator<String> keys = data.keys();
             while (keys.hasNext()) {
                 String key = keys.next();
-                JSONObject busInfo = ob.getJSONObject(key);
+                JSONObject busInfo = data.getJSONObject(key);
 
                 UpdateParcel parcel = new UpdateParcel();
                 if (busInfo.has("add")) {
@@ -131,6 +131,9 @@ public class JSONParser {
                 }
                 if (busInfo.has("update")) {
                     parcel.update = parseBusDict(busInfo.getJSONObject("update"));
+                }
+                if (busInfo.has("reset")) {
+                    parcel.reset = parseBusDict(busInfo.getJSONObject("reset"));
                 }
 
                 out.put(key, parcel);
