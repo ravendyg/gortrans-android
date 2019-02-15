@@ -19,7 +19,9 @@ import org.osmdroid.events.MapListener;
 import org.osmdroid.events.ScrollEvent;
 import org.osmdroid.events.ZoomEvent;
 import org.osmdroid.tileprovider.constants.OpenStreetMapTileProviderConstants;
+import org.osmdroid.tileprovider.tilesource.ITileSource;
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory;
+import org.osmdroid.tileprovider.tilesource.XYTileSource;
 import org.osmdroid.util.BoundingBox;
 import org.osmdroid.util.GeoPoint;
 import org.osmdroid.views.MapView;
@@ -47,6 +49,8 @@ import info.nskgortrans.maps.DataClasses.UpdateParcel;
 public class Map {
     private static final String LOG_TAG = "Map service";
     private final int FINE_LOCATION_PERMISSION_GRANTED = 11;
+    //    private final String TILE_BASE_URL = "basemaps.cartocdn.com/light_all/";
+    private final String TILE_BASE_URL = "http://tile.nskgortrans.info/";
 
     private SharedPreferences pref;
     private MapView map;
@@ -78,13 +82,17 @@ public class Map {
 
     public void init(Context context, View view, SharedPreferences _pref) {
         pref = _pref;
-        OpenStreetMapTileProviderConstants.setUserAgentValue(BuildConfig.APPLICATION_ID);
 
         /** init map */
         map = (MapView) view;
+        final ITileSource tileSource = new XYTileSource( "nskgortrans", 1, 20, 256, ".png",
+                new String[] {
+                        TILE_BASE_URL + "a/",
+                        TILE_BASE_URL + "b/",
+                        TILE_BASE_URL + "c/",
+                        TILE_BASE_URL + "d/",});
+        map.setTileSource(tileSource);
         ctx = context;
-        map.setTileSource(TileSourceFactory.MAPNIK);
-
         map.setBuiltInZoomControls(true);
         map.setMultiTouchControls(true);
 
@@ -105,7 +113,12 @@ public class Map {
 
         float lat = pref.getFloat(ctx.getString(R.string.pref_lat), (float) 54.908593335436926);
         float lng = pref.getFloat(ctx.getString(R.string.pref_lng), (float) 83.0291748046875);
-        int zoom = pref.getInt(ctx.getString(R.string.pref_zoom), 10);
+        float zoom = 10F;
+        try {
+            zoom = pref.getFloat(ctx.getString(R.string.pref_zoom), 10F);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
         mapController = map.getController();
         mapController.setZoom(zoom);
@@ -126,21 +139,6 @@ public class Map {
             }
         });
     }
-/*
-    public void loadStops(
-            HashMap<String, StopInfo> stopsData,
-            HashMap<String, HashSet<String>> busStops
-    ) {
-        if (stopsData == null) {
-            stopsData = new HashMap<>();
-        }
-        if (busStops == null) {
-            busStops = new HashMap<>();
-        }
-        this.stopsData = stopsData;
-        this.busStops = busStops;
-    }
-*/
 
     public void saveState() {
         try { // save current map position and zoom
@@ -149,12 +147,12 @@ public class Map {
 
             float lat = (float) center.getLatitude();
             float lng = (float) center.getLongitude();
-            int zoom = proj.getZoomLevel();
+            float zoom = (float) proj.getZoomLevel();
 
             SharedPreferences.Editor editor = pref.edit();
             editor.putFloat(ctx.getString(R.string.pref_lat), lat);
             editor.putFloat(ctx.getString(R.string.pref_lng), lng);
-            editor.putInt(ctx.getString(R.string.pref_zoom), zoom);
+            editor.putFloat(ctx.getString(R.string.pref_zoom), zoom);
             editor.commit();
         } catch (Exception err) {
             Log.e(LOG_TAG, "save map position", err);
@@ -187,6 +185,7 @@ public class Map {
         }
     }
 
+    // TODO: allow some space around the route
     public void zoomToRoute(final String code) {
         nextToZoomOn = code;
         tryToZoom();
