@@ -251,6 +251,9 @@ public class Map {
         Iterator<String> busCodeIterator = parcels.keySet().iterator();
         while (busCodeIterator.hasNext()) {
             String busCode = busCodeIterator.next();
+            if (busCode == null) {
+                continue;
+            }
             boolean routeAlreadyDisplayed = routeDisplayed.contains(busCode);
             UpdateParcel parcel = parcels.get(busCode);
             boolean _reset = reset || parcel.reset != null;
@@ -277,10 +280,12 @@ public class Map {
                 add = parcel.add;
             }
             for (String graph : add.keySet()) {
-                Marker marker = busMarkerFactory(
-                        busCode,
-                        add.get(graph)
-                );
+                BusInfo graphInfo = add.get(graph);
+                if (graphInfo == null) {
+                    // don't know how it's possible, but had an NPE here
+                    continue;
+                }
+                Marker marker = busMarkerFactory(busCode, graphInfo);
                 if (routeAlreadyDisplayed) {
                     map.getOverlays().add(marker);
                 }
