@@ -185,7 +185,6 @@ public class Map {
         }
     }
 
-    // TODO: allow some space around the route
     public void zoomToRoute(final String code) {
         nextToZoomOn = code;
         tryToZoom();
@@ -424,6 +423,12 @@ public class Map {
                     west = lng;
                 }
             }
+            double width = east - west;
+            west -= width *0.05;
+            east += width *0.05;
+            double height = north - south;
+            south -= height *0.05;
+            north += height *0.05;
             BoundingBox box = new BoundingBox(north, east, south, west);
             map.zoomToBoundingBox(box, true);
             nextToZoomOn = null;
