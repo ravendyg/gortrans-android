@@ -8,35 +8,12 @@
     android:orientation="vertical"
     tools:context="info.nskgortrans.maps.MainActivity"
 >
-    <LinearLayout
-        android:id="@+id/storage_warnig"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:visibility="gone"
-        android:orientation="vertical"
-        android:gravity="center"
-    >
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="@string/storage_warning"
-            android:layout_margin="@dimen/activity_vertical_margin"
-            android:gravity="center_horizontal"
-        />
-        <Button
-            android:layout_marginTop="@dimen/activity_vertical_margin"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:onClick="requestStorage"
-            android:text="@string/storage_warning_btn"
-        />
-    </LinearLayout>
     <FrameLayout
         android:id="@+id/map_frame"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="horizontal"
-        android:visibility="gone"
+
     >
         <org.osmdroid.views.MapView
             android:id="@+id/map"

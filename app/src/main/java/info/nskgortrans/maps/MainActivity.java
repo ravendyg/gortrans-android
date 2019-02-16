@@ -1,13 +1,9 @@
 package info.nskgortrans.maps;
 
 import android.Manifest;
-import android.app.ActivityManager;
-import android.app.ActivityManager.RunningServiceInfo;
 import android.app.Dialog;
-import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.location.Location;
@@ -18,7 +14,6 @@ import android.os.Message;
 import android.preference.PreferenceManager;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
-import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -26,7 +21,9 @@ import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ListView;
 
+import org.osmdroid.config.Configuration;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -53,7 +50,6 @@ public class MainActivity extends AppCompatActivity {
 
     private final int COARSE_LOCATION_PERMISSION_GRANTED = 10;
     private final int FINE_LOCATION_PERMISSION_GRANTED = 11;
-    private final int WRITE_STORAGE_PERMISSION_GRANTED = 12;
     private final int MIN_POSITION_TRACKING_TIME = 1000 * 60;
     private final long MIN_POSITION_TRACKING_DISTANCE = 10;
 
@@ -83,12 +79,13 @@ public class MainActivity extends AppCompatActivity {
     private ArrayList<BusListElementData> displayedBuses;
     private BusListAdapter displayedBusesAdapter;
 
-    private HashMap<String, StopInfo> stops;
-    private HashMap<String, HashSet<String>> busStops;
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        File tilesDir = new File(getApplicationContext().getFilesDir() + "/tiles");
+        Configuration.getInstance().setOsmdroidTileCache(tilesDir);
+
         setContentView(R.layout.activity_main);
 
         syncHandler = new Handler(new Handler.Callback() {
@@ -145,11 +142,7 @@ public class MainActivity extends AppCompatActivity {
         syncService = new SyncService(storageService, httpService, pref, utils, syncHandler);
         busService = new BusService(updateHandler, apiKey);
 
-        boolean storageGranted = handlePermissionVerifiation(savedInstanceState);
-        if (storageGranted) {
-            // storage is critical for the map and sync
-            init();
-        }
+        init();
     }
 
     private String ensureApiKey() {
@@ -375,15 +368,6 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-
-    public void requestStorage(View view) {
-        ActivityCompat.requestPermissions(
-                this,
-                new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
-                WRITE_STORAGE_PERMISSION_GRANTED
-        );
-    }
-
     @Override
     public void onStart() {
         super.onStart();
@@ -431,61 +415,6 @@ public class MainActivity extends AppCompatActivity {
         return removed;
     }
 
-    private boolean handlePermissionVerifiation(Bundle savedInstanceState) {
-        boolean storageGranted = false;
-        boolean askedPermissions = pref.getBoolean("asked-permissions", false);
-        SharedPreferences.Editor editor = pref.edit();
-        editor.putBoolean("asked-permissions", true);
-        editor.commit();
-
-        // make sure all permissions granted
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
-                != PackageManager.PERMISSION_GRANTED
-        ) {
-            if (!askedPermissions) {
-                ActivityCompat.requestPermissions(
-                        this,
-                        new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
-                        FINE_LOCATION_PERMISSION_GRANTED
-                );
-            }
-        } else {
-            startTrackingUser();
-        }
-
-        View warningView = findViewById(R.id.storage_warnig);
-        View mapView = findViewById(R.id.map_frame);
-
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
-                != PackageManager.PERMISSION_GRANTED
-        ) {
-            if (!askedPermissions) {
-                ActivityCompat.requestPermissions(
-                        this,
-                        new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
-                        WRITE_STORAGE_PERMISSION_GRANTED
-                );
-            } else {
-                if (warningView != null) {
-                    warningView.setVisibility(View.VISIBLE);
-                }
-                if (mapView != null) {
-                    mapView.setVisibility(View.GONE);
-                }
-            }
-        } else {
-            storageGranted = true;
-            if (warningView != null) {
-                warningView.setVisibility(View.GONE);
-            }
-            if (mapView != null) {
-                mapView.setVisibility(View.VISIBLE);
-            }
-        }
-
-        return storageGranted;
-    }
-
     @Override
     public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
         switch (requestCode) {
@@ -496,32 +425,6 @@ public class MainActivity extends AppCompatActivity {
                     Intent intent = getIntent();
                     finish();
                     startActivity(intent);
-                }
-                break;
-            }
-            case WRITE_STORAGE_PERMISSION_GRANTED: {
-                if (grantResults != null && grantResults.length > 0) {
-                    View warningView = findViewById(R.id.storage_warnig);
-                    View mapView = findViewById(R.id.map_frame);
-                    if (grantResults[0] == 0) {
-                        Intent intent = getIntent();
-                        finish();
-
-                        if (warningView != null) {
-                            warningView.setVisibility(View.GONE);
-                        }
-                        if (mapView != null) {
-                            mapView.setVisibility(View.VISIBLE);
-                        }
-                        startActivity(intent);
-                    } else {
-                        if (warningView != null) {
-                            warningView.setVisibility(View.VISIBLE);
-                        }
-                        if (mapView != null) {
-                            mapView.setVisibility(View.GONE);
-                        }
-                    }
                 }
                 break;
             }
