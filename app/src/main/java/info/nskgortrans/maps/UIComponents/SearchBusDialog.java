@@ -85,6 +85,13 @@ public class SearchBusDialog extends Dialog {
         );
         show();
 
+        if (context != null) {
+            InputMethodManager imm = (InputMethodManager) context.getSystemService(Context.INPUT_METHOD_SERVICE);
+            if (imm != null) {
+                imm.toggleSoftInput(InputMethodManager.RESULT_SHOWN, 0);
+            }
+        }
+
         adapter = new WaysAdapter(context, result);
         ListView list = (ListView) findViewById(R.id.wayGroups);
         list.setAdapter(adapter);
