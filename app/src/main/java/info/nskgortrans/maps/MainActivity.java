@@ -22,6 +22,7 @@ import android.widget.AdapterView;
 import android.widget.ListView;
 
 import org.osmdroid.config.Configuration;
+import org.osmdroid.config.IConfigurationProvider;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -84,7 +85,11 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
 
         File tilesDir = new File(getApplicationContext().getFilesDir() + "/tiles");
-        Configuration.getInstance().setOsmdroidTileCache(tilesDir);
+        IConfigurationProvider configuration = Configuration.getInstance();
+        configuration.setOsmdroidTileCache(tilesDir);
+        // Now I own the server, there is no reason to follow OSM tile usage policy
+        // https://operations.osmfoundation.org/policies/tiles/
+        configuration.setTileDownloadThreads((short) 12);
 
         setContentView(R.layout.activity_main);
 
