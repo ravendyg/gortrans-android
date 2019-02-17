@@ -1,4 +1,4 @@
-package info.nskgortrans.maps.Data;
+package info.nskgortrans.maps.DataClasses;
 
 /**
  * Created by me on 22/01/17.

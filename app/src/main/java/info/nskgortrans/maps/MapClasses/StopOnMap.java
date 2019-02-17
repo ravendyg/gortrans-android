@@ -16,19 +16,11 @@ public class StopOnMap {
         this.id = stopInfo.getId();
         this.stopInfo = stopInfo;
         this.marker = marker;
-        buses = new HashSet<String>();
+        buses = new HashSet<>();
     }
 
     public String getId() {
         return id;
-    }
-
-    public StopInfo getStopInfo() {
-        return stopInfo;
-    }
-
-    public HashSet<String> getBuses() {
-        return buses;
     }
 
     public Marker getMarker() {

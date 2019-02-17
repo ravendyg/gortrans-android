@@ -1,8 +1,6 @@
 package info.nskgortrans.maps.Services;
 
-import org.java_websocket.client.DefaultSSLWebSocketClientFactory;
 import org.java_websocket.client.WebSocketClient;
-import org.java_websocket.drafts.Draft_17;
 import org.java_websocket.handshake.ServerHandshake;
 import org.json.JSONObject;
 
@@ -10,7 +8,6 @@ import android.os.Handler;
 import android.os.Message;
 
 import java.net.URI;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 
@@ -26,7 +23,6 @@ public class BusService implements IBusService {
     private final String BASE_URL = Constants.WS_PREFIX + Constants.BASE_URL;
     private final String apiKey;
     private final Handler handler;
-    private final ArrayList<String> messages = new ArrayList<>();
     private HashSet<String> subscriptions = new HashSet<>();
 
     public BusService(Handler handler, String apiKey) {

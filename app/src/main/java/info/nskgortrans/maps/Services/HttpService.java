@@ -9,8 +9,8 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 
 import info.nskgortrans.maps.Constants;
-import info.nskgortrans.maps.Data.TrassData;
-import info.nskgortrans.maps.Data.RoutesInfoData;
+import info.nskgortrans.maps.DataClasses.TrassData;
+import info.nskgortrans.maps.DataClasses.RoutesInfoData;
 
 public class HttpService implements IHttpService {
     private String apiKey = "";

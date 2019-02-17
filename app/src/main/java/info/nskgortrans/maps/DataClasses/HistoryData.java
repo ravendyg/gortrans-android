@@ -1,10 +1,8 @@
-package info.nskgortrans.maps.Data;
+package info.nskgortrans.maps.DataClasses;
 
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
-
-import info.nskgortrans.maps.DataClasses.Way;
 
 public class HistoryData implements Serializable {
     final static int HISTORY_SIZE = 5;
@@ -12,10 +10,10 @@ public class HistoryData implements Serializable {
 
     public HistoryData() {
         this.history = new ArrayList[]{
-                new ArrayList<>(Arrays.asList(new Way[0])),
-                new ArrayList<>(Arrays.asList(new Way[0])),
-                new ArrayList<>(Arrays.asList(new Way[0])),
-                new ArrayList<>(Arrays.asList(new Way[0]))
+                new ArrayList<>(Arrays.asList(new WayData[0])),
+                new ArrayList<>(Arrays.asList(new WayData[0])),
+                new ArrayList<>(Arrays.asList(new WayData[0])),
+                new ArrayList<>(Arrays.asList(new WayData[0]))
         };
     }
 

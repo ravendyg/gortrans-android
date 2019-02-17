@@ -15,7 +15,7 @@ import android.widget.TextView;
 
 import java.util.ArrayList;
 
-import info.nskgortrans.maps.Data.BusListElementData;
+import info.nskgortrans.maps.DataClasses.BusListElementData;
 import info.nskgortrans.maps.R;
 
 //package info.nskgortrans.maps.Adapters;

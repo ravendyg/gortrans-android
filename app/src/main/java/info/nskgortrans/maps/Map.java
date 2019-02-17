@@ -15,11 +15,8 @@ import android.util.Log;
 import android.view.View;
 
 import org.osmdroid.api.IMapController;
-import org.osmdroid.events.MapListener;
-import org.osmdroid.events.ScrollEvent;
-import org.osmdroid.events.ZoomEvent;
-import org.osmdroid.tileprovider.constants.OpenStreetMapTileProviderConstants;
-import org.osmdroid.tileprovider.tilesource.TileSourceFactory;
+import org.osmdroid.tileprovider.tilesource.ITileSource;
+import org.osmdroid.tileprovider.tilesource.XYTileSource;
 import org.osmdroid.util.BoundingBox;
 import org.osmdroid.util.GeoPoint;
 import org.osmdroid.views.MapView;
@@ -35,27 +32,24 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 
-import info.nskgortrans.maps.Data.BusListElementData;
-import info.nskgortrans.maps.Data.TrassData;
-import info.nskgortrans.maps.Data.WayPointData;
+import info.nskgortrans.maps.DataClasses.BusListElementData;
+import info.nskgortrans.maps.DataClasses.TrassData;
+import info.nskgortrans.maps.DataClasses.WayPointData;
 import info.nskgortrans.maps.DataClasses.BusInfo;
-import info.nskgortrans.maps.DataClasses.BusRoute;
 import info.nskgortrans.maps.DataClasses.StopInfo;
 import info.nskgortrans.maps.MapClasses.StopOnMap;
 import info.nskgortrans.maps.DataClasses.UpdateParcel;
 
 public class Map {
     private static final String LOG_TAG = "Map service";
-    private final int FINE_LOCATION_PERMISSION_GRANTED = 11;
+    private final String TILE_BASE_URL = "http://tile.nskgortrans.info/";
 
     private SharedPreferences pref;
     private MapView map;
     private IMapController mapController;
     private Context ctx;
-    private Location location;
 
     private Marker userMarker;
-    private InfoWindow userInfoWindow;
 
     private Drawable stopImage;
     private Drawable userImage;
@@ -67,7 +61,6 @@ public class Map {
     // data
     private HashMap<String, StopOnMap> allStops = new HashMap<>();
     private HashMap<String, HashSet<StopOnMap>> busCodeToStops = new HashMap<>();
-    private HashMap<String, BusRoute> busRoutes = new HashMap<>();
     // stop markers on the map with corresponding routes counter
     private HashMap<String, Polyline> busRoutesOnMap = new HashMap<>();
     private HashSet<String> routeDisplayed = new HashSet<>();
@@ -78,14 +71,17 @@ public class Map {
 
     public void init(Context context, View view, SharedPreferences _pref) {
         pref = _pref;
-        OpenStreetMapTileProviderConstants.setUserAgentValue(BuildConfig.APPLICATION_ID);
 
         /** init map */
         map = (MapView) view;
+        final ITileSource tileSource = new XYTileSource( "nskgortrans", 1, 20, 256, ".png",
+                new String[] {
+                        TILE_BASE_URL + "a/",
+                        TILE_BASE_URL + "b/",
+                        TILE_BASE_URL + "c/",
+                        TILE_BASE_URL + "d/",});
+        map.setTileSource(tileSource);
         ctx = context;
-        map.setTileSource(TileSourceFactory.MAPNIK);
-
-        map.setBuiltInZoomControls(true);
         map.setMultiTouchControls(true);
 
         stopImage = ContextCompat.getDrawable(ctx, R.drawable.bus_stop2);
@@ -103,44 +99,20 @@ public class Map {
         Bitmap userBitmap = ((BitmapDrawable) userImage).getBitmap();
         userImage = new BitmapDrawable(ctx.getResources(), Bitmap.createScaledBitmap(userBitmap, 50, 80, true));
 
-        float lat = pref.getFloat(ctx.getString(R.string.pref_lat), (float) 54.908593335436926);
-        float lng = pref.getFloat(ctx.getString(R.string.pref_lng), (float) 83.0291748046875);
-        int zoom = pref.getInt(ctx.getString(R.string.pref_zoom), 10);
+        float lat = pref.getFloat(ctx.getString(R.string.pref_lat), (float) 54.984408);
+        float lng = pref.getFloat(ctx.getString(R.string.pref_lng), (float) 82.959072);
+        float zoom = 12F;
+        try {
+            zoom = pref.getFloat(ctx.getString(R.string.pref_zoom), zoom);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
         mapController = map.getController();
         mapController.setZoom(zoom);
         GeoPoint startPoint = new GeoPoint(lat, lng);
         mapController.setCenter(startPoint);
-
-        map.setMapListener(new MapListener() {
-            @Override
-            public boolean onScroll(ScrollEvent scrollEvent) {
-                hideUserInfo();
-                return false;
-            }
-
-            @Override
-            public boolean onZoom(ZoomEvent zoomEvent) {
-                hideUserInfo();
-                return false;
-            }
-        });
     }
-/*
-    public void loadStops(
-            HashMap<String, StopInfo> stopsData,
-            HashMap<String, HashSet<String>> busStops
-    ) {
-        if (stopsData == null) {
-            stopsData = new HashMap<>();
-        }
-        if (busStops == null) {
-            busStops = new HashMap<>();
-        }
-        this.stopsData = stopsData;
-        this.busStops = busStops;
-    }
-*/
 
     public void saveState() {
         try { // save current map position and zoom
@@ -149,12 +121,12 @@ public class Map {
 
             float lat = (float) center.getLatitude();
             float lng = (float) center.getLongitude();
-            int zoom = proj.getZoomLevel();
+            float zoom = (float) proj.getZoomLevel();
 
             SharedPreferences.Editor editor = pref.edit();
             editor.putFloat(ctx.getString(R.string.pref_lat), lat);
             editor.putFloat(ctx.getString(R.string.pref_lng), lng);
-            editor.putInt(ctx.getString(R.string.pref_zoom), zoom);
+            editor.putFloat(ctx.getString(R.string.pref_zoom), zoom);
             editor.commit();
         } catch (Exception err) {
             Log.e(LOG_TAG, "save map position", err);
@@ -276,15 +248,17 @@ public class Map {
                 // add
                 add = parcel.add;
             }
-            for (String graph : add.keySet()) {
-                Marker marker = busMarkerFactory(
-                        busCode,
-                        add.get(graph)
-                );
-                if (routeAlreadyDisplayed) {
-                    map.getOverlays().add(marker);
+            if (add != null) {
+                for (BusInfo busInfo : add.values()) {
+                    Marker marker = busMarkerFactory(
+                            busCode,
+                            add.get(busInfo.graph)
+                    );
+                    if (routeAlreadyDisplayed) {
+                        map.getOverlays().add(marker);
+                    }
+                    buses.put(busInfo.graph, marker);
                 }
-                buses.put(graph, marker);
             }
             if (_reset) {
                 continue;
@@ -425,15 +399,15 @@ public class Map {
                     west = lng;
                 }
             }
+            double width = east - west;
+            west -= width *0.05;
+            east += width *0.05;
+            double height = north - south;
+            south -= height *0.05;
+            north += height *0.05;
             BoundingBox box = new BoundingBox(north, east, south, west);
             map.zoomToBoundingBox(box, true);
             nextToZoomOn = null;
-        }
-    }
-
-    private void hideUserInfo() {
-        if (userInfoWindow != null && userInfoWindow.isOpen()) {
-            userInfoWindow.close();
         }
     }
 

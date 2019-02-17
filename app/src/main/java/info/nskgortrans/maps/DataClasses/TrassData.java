@@ -1,4 +1,4 @@
-package info.nskgortrans.maps.Data;
+package info.nskgortrans.maps.DataClasses;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -6,8 +6,6 @@ import org.json.JSONObject;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
-
-import info.nskgortrans.maps.DataClasses.StopInfo;
 
 public class TrassData implements Serializable {
     private String code;

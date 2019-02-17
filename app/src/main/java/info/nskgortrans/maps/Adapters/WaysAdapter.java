@@ -9,7 +9,7 @@ import android.widget.TextView;
 
 import java.util.ArrayList;
 
-import info.nskgortrans.maps.Data.WayData;
+import info.nskgortrans.maps.DataClasses.WayData;
 import info.nskgortrans.maps.R;
 
 /**

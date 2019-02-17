@@ -24,9 +24,9 @@ import java.util.Arrays;
 import java.util.List;
 
 import info.nskgortrans.maps.Adapters.WaysAdapter;
-import info.nskgortrans.maps.Data.HistoryData;
-import info.nskgortrans.maps.Data.RoutesInfoData;
-import info.nskgortrans.maps.Data.WayData;
+import info.nskgortrans.maps.DataClasses.HistoryData;
+import info.nskgortrans.maps.DataClasses.RoutesInfoData;
+import info.nskgortrans.maps.DataClasses.WayData;
 import info.nskgortrans.maps.MainActivity;
 import info.nskgortrans.maps.R;
 import info.nskgortrans.maps.Services.IStorageService;
@@ -84,6 +84,13 @@ public class SearchBusDialog extends Dialog {
                 new ColorDrawable(Color.rgb(255, 255, 255))
         );
         show();
+
+        if (context != null) {
+            InputMethodManager imm = (InputMethodManager) context.getSystemService(Context.INPUT_METHOD_SERVICE);
+            if (imm != null) {
+                imm.toggleSoftInput(InputMethodManager.RESULT_SHOWN, 0);
+            }
+        }
 
         adapter = new WaysAdapter(context, result);
         ListView list = (ListView) findViewById(R.id.wayGroups);
