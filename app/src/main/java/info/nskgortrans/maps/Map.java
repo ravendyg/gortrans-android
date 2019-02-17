@@ -248,17 +248,15 @@ public class Map {
                 // add
                 add = parcel.add;
             }
-            if (add != null) {
-                for (BusInfo busInfo : add.values()) {
-                    Marker marker = busMarkerFactory(
-                            busCode,
-                            add.get(busInfo.graph)
-                    );
-                    if (routeAlreadyDisplayed) {
-                        map.getOverlays().add(marker);
-                    }
-                    buses.put(busInfo.graph, marker);
+            for (BusInfo busInfo : add.values()) {
+                Marker marker = busMarkerFactory(
+                        busCode,
+                        add.get(busInfo.graph)
+                );
+                if (routeAlreadyDisplayed) {
+                    map.getOverlays().add(marker);
                 }
+                buses.put(busInfo.graph, marker);
             }
             if (_reset) {
                 continue;
@@ -268,10 +266,8 @@ public class Map {
                 removeBusMarker(busCode, graph);
             }
             // update
-            Iterator<String> updateIterator = parcel.update.keySet().iterator();
-            while (updateIterator.hasNext()) {
-                String graph = updateIterator.next();
-                updateBusMarker(busCode, parcel.update.get(graph));
+            for (BusInfo busInfo : parcel.update.values()) {
+                updateBusMarker(busCode, busInfo);
             }
         }
 
