@@ -9,7 +9,7 @@ import java.io.Serializable;
 public class BusInfo implements Serializable {
     public int azimuth;
     public String direction;
-    public int graph;
+    public String graph;
     public int id_typetr;
     public double lat;
     public double lng;
@@ -18,8 +18,18 @@ public class BusInfo implements Serializable {
     public String time_nav;
     public String title;
 
-    public BusInfo(int _azimuth, String _direction, int _graph, int _id_typetr, double _lat, double _lng,
-                   String _marsh, int _speed, String _time_nav, String _title) {
+    public BusInfo(
+            int _azimuth,
+            String _direction,
+            String _graph,
+            int _id_typetr,
+            double _lat,
+            double _lng,
+            String _marsh,
+            int _speed,
+            String _time_nav,
+            String _title
+    ) {
         azimuth = _azimuth;
         direction = _direction;
         graph = _graph;

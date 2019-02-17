@@ -184,7 +184,7 @@ public class JSONParser {
         try {
             int azimuth = ob.getInt("azimuth");
             String direction = ob.getString("direction");
-            int graph = ob.getInt("graph");
+            String graph = ob.getString("graph");
             int id_typetr = ob.getInt("id_typetr");
             double lat = ob.getDouble("lat");
             double lng = ob.getDouble("lng");

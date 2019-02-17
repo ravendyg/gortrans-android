@@ -111,11 +111,11 @@ public class Map {
         Bitmap userBitmap = ((BitmapDrawable) userImage).getBitmap();
         userImage = new BitmapDrawable(ctx.getResources(), Bitmap.createScaledBitmap(userBitmap, 50, 80, true));
 
-        float lat = pref.getFloat(ctx.getString(R.string.pref_lat), (float) 54.908593335436926);
-        float lng = pref.getFloat(ctx.getString(R.string.pref_lng), (float) 83.0291748046875);
-        float zoom = 10F;
+        float lat = pref.getFloat(ctx.getString(R.string.pref_lat), (float) 54.984408);
+        float lng = pref.getFloat(ctx.getString(R.string.pref_lng), (float) 82.959072);
+        float zoom = 12F;
         try {
-            zoom = pref.getFloat(ctx.getString(R.string.pref_zoom), 10F);
+            zoom = pref.getFloat(ctx.getString(R.string.pref_zoom), zoom);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -274,15 +274,17 @@ public class Map {
                 // add
                 add = parcel.add;
             }
-            for (String graph : add.keySet()) {
-                Marker marker = busMarkerFactory(
-                        busCode,
-                        add.get(graph)
-                );
-                if (routeAlreadyDisplayed) {
-                    map.getOverlays().add(marker);
+            if (add != null) {
+                for (BusInfo busInfo : add.values()) {
+                    Marker marker = busMarkerFactory(
+                            busCode,
+                            add.get(busInfo.graph)
+                    );
+                    if (routeAlreadyDisplayed) {
+                        map.getOverlays().add(marker);
+                    }
+                    buses.put(busInfo.graph, marker);
                 }
-                buses.put(graph, marker);
             }
             if (_reset) {
                 continue;
