@@ -8,8 +8,8 @@ import java.util.HashSet;
 import java.util.Set;
 
 import info.nskgortrans.maps.Constants;
-import info.nskgortrans.maps.Data.RoutesInfoData;
-import info.nskgortrans.maps.Data.TrassData;
+import info.nskgortrans.maps.DataClasses.RoutesInfoData;
+import info.nskgortrans.maps.DataClasses.TrassData;
 import info.nskgortrans.maps.Utils;
 
 public class SyncService implements ISyncService {

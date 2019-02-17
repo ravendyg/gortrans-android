@@ -3,12 +3,11 @@ package info.nskgortrans.maps;
 import android.content.SharedPreferences;
 import android.os.Handler;
 
-import org.json.JSONArray;
 import org.json.JSONObject;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 
-import info.nskgortrans.maps.Data.RoutesInfoData;
+import info.nskgortrans.maps.DataClasses.RoutesInfoData;
 import info.nskgortrans.maps.Services.HttpService;
 import info.nskgortrans.maps.Services.IHttpService;
 import info.nskgortrans.maps.Services.IStorageService;

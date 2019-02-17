@@ -1,8 +1,8 @@
 package info.nskgortrans.maps.Services;
 
-import info.nskgortrans.maps.Data.HistoryData;
-import info.nskgortrans.maps.Data.RoutesInfoData;
-import info.nskgortrans.maps.Data.TrassData;
+import info.nskgortrans.maps.DataClasses.HistoryData;
+import info.nskgortrans.maps.DataClasses.RoutesInfoData;
+import info.nskgortrans.maps.DataClasses.TrassData;
 
 public interface IStorageService {
     RoutesInfoData getRoutesInfo();

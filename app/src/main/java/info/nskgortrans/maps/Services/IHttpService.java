@@ -1,7 +1,7 @@
 package info.nskgortrans.maps.Services;
 
-import info.nskgortrans.maps.Data.TrassData;
-import info.nskgortrans.maps.Data.RoutesInfoData;
+import info.nskgortrans.maps.DataClasses.TrassData;
+import info.nskgortrans.maps.DataClasses.RoutesInfoData;
 
 public interface IHttpService {
     RoutesInfoData getRoutesInfo(String hash);

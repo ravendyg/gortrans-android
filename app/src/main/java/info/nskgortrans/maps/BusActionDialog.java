@@ -6,7 +6,7 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 
-import info.nskgortrans.maps.Data.BusListElementData;
+import info.nskgortrans.maps.DataClasses.BusListElementData;
 
 /**
  * Created by me on 22/01/17.

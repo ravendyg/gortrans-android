@@ -15,12 +15,7 @@ import android.util.Log;
 import android.view.View;
 
 import org.osmdroid.api.IMapController;
-import org.osmdroid.events.MapListener;
-import org.osmdroid.events.ScrollEvent;
-import org.osmdroid.events.ZoomEvent;
-import org.osmdroid.tileprovider.constants.OpenStreetMapTileProviderConstants;
 import org.osmdroid.tileprovider.tilesource.ITileSource;
-import org.osmdroid.tileprovider.tilesource.TileSourceFactory;
 import org.osmdroid.tileprovider.tilesource.XYTileSource;
 import org.osmdroid.util.BoundingBox;
 import org.osmdroid.util.GeoPoint;
@@ -37,29 +32,24 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 
-import info.nskgortrans.maps.Data.BusListElementData;
-import info.nskgortrans.maps.Data.TrassData;
-import info.nskgortrans.maps.Data.WayPointData;
+import info.nskgortrans.maps.DataClasses.BusListElementData;
+import info.nskgortrans.maps.DataClasses.TrassData;
+import info.nskgortrans.maps.DataClasses.WayPointData;
 import info.nskgortrans.maps.DataClasses.BusInfo;
-import info.nskgortrans.maps.DataClasses.BusRoute;
 import info.nskgortrans.maps.DataClasses.StopInfo;
 import info.nskgortrans.maps.MapClasses.StopOnMap;
 import info.nskgortrans.maps.DataClasses.UpdateParcel;
 
 public class Map {
     private static final String LOG_TAG = "Map service";
-    private final int FINE_LOCATION_PERMISSION_GRANTED = 11;
-    //    private final String TILE_BASE_URL = "basemaps.cartocdn.com/light_all/";
     private final String TILE_BASE_URL = "http://tile.nskgortrans.info/";
 
     private SharedPreferences pref;
     private MapView map;
     private IMapController mapController;
     private Context ctx;
-    private Location location;
 
     private Marker userMarker;
-    private InfoWindow userInfoWindow;
 
     private Drawable stopImage;
     private Drawable userImage;
@@ -71,7 +61,6 @@ public class Map {
     // data
     private HashMap<String, StopOnMap> allStops = new HashMap<>();
     private HashMap<String, HashSet<StopOnMap>> busCodeToStops = new HashMap<>();
-    private HashMap<String, BusRoute> busRoutes = new HashMap<>();
     // stop markers on the map with corresponding routes counter
     private HashMap<String, Polyline> busRoutesOnMap = new HashMap<>();
     private HashSet<String> routeDisplayed = new HashSet<>();
@@ -93,7 +82,6 @@ public class Map {
                         TILE_BASE_URL + "d/",});
         map.setTileSource(tileSource);
         ctx = context;
-        map.setBuiltInZoomControls(true);
         map.setMultiTouchControls(true);
 
         stopImage = ContextCompat.getDrawable(ctx, R.drawable.bus_stop2);
@@ -124,20 +112,6 @@ public class Map {
         mapController.setZoom(zoom);
         GeoPoint startPoint = new GeoPoint(lat, lng);
         mapController.setCenter(startPoint);
-
-        map.setMapListener(new MapListener() {
-            @Override
-            public boolean onScroll(ScrollEvent scrollEvent) {
-                hideUserInfo();
-                return false;
-            }
-
-            @Override
-            public boolean onZoom(ZoomEvent zoomEvent) {
-                hideUserInfo();
-                return false;
-            }
-        });
     }
 
     public void saveState() {
@@ -434,12 +408,6 @@ public class Map {
             BoundingBox box = new BoundingBox(north, east, south, west);
             map.zoomToBoundingBox(box, true);
             nextToZoomOn = null;
-        }
-    }
-
-    private void hideUserInfo() {
-        if (userInfoWindow != null && userInfoWindow.isOpen()) {
-            userInfoWindow.close();
         }
     }
 

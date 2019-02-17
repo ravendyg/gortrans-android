@@ -1,4 +1,4 @@
-package info.nskgortrans.maps.Data;
+package info.nskgortrans.maps.DataClasses;
 
 import org.json.JSONArray;
 import org.json.JSONObject;

@@ -1,7 +1,6 @@
 package info.nskgortrans.maps.Services;
 
 import android.content.Context;
-import android.content.res.AssetManager;
 
 import org.json.JSONObject;
 
@@ -16,9 +15,9 @@ import java.io.ObjectOutput;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 
-import info.nskgortrans.maps.Data.HistoryData;
-import info.nskgortrans.maps.Data.RoutesInfoData;
-import info.nskgortrans.maps.Data.TrassData;
+import info.nskgortrans.maps.DataClasses.HistoryData;
+import info.nskgortrans.maps.DataClasses.RoutesInfoData;
+import info.nskgortrans.maps.DataClasses.TrassData;
 
 public class StorageService implements IStorageService {
     public static final String ROUTES_INFO_FILE_NAME = "routes_info.json";
@@ -149,28 +148,6 @@ public class StorageService implements IStorageService {
         String str = new String(buffer, "UTF-8");
         return new JSONObject(str);
     }
-
-//    private Object readObjectFromDisk(InputStream) {
-//        Object result = null;
-//        InputStream file = null;
-//        InputStream buffer = null;
-//        ObjectInput input = null;
-//
-//        try {
-//            file = ctx.openFileInput(path);
-//            buffer = new BufferedInputStream(file);
-//            input = new ObjectInputStream(buffer);
-//            result = input.readObject();
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//        } finally {
-//            close(buffer);
-//            close(file);
-//            close(input);
-//        }
-//
-//        return result;
-//    }
 
     private void close(Closeable resource) {
         if (resource != null) {
