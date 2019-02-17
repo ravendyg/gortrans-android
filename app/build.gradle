@@ -8,16 +8,6 @@ android {
         applicationId "info.nskgortrans.maps"
         minSdkVersion 15
         targetSdkVersion 26
-<<<<<<< HEAD
-        versionCode 11
-        versionName "2.0.2"
-    }
-    buildTypes {
-        release {
-            shrinkResources true
-//            minifyEnabled true
-//            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
-=======
         versionCode 12
         versionName "2.1.2"
     }
@@ -26,7 +16,6 @@ android {
 //            shrinkResources true
 //             minifyEnabled true
 //             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
->>>>>>> new-map
         }
     }
     lintOptions {
