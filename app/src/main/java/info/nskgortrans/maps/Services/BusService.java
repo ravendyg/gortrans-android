@@ -8,7 +8,6 @@ import android.os.Handler;
 import android.os.Message;
 
 import java.net.URI;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 

@@ -16,6 +16,7 @@ public class SyncService implements ISyncService {
     public static final long SYNC_VALID_FOR = 60 * 60 * 24;
     public static final int ROUTES_SYNC_DATA_WHAT = 1;
     public static final int TRASS_SYNC_DATA_WHAT = 2;
+    public static final int SYNCING_DATA_WHAT = 3;
 
     private IStorageService storageService;
     private IHttpService httpService;
@@ -93,9 +94,9 @@ public class SyncService implements ISyncService {
                     Message message = handler.obtainMessage(TRASS_SYNC_DATA_WHAT, trassData);
                     handler.sendMessage(message);
                     hash = trassData.getHash();
-                }
-                if (trassData == null) {
-                    // TODO: display a message "Loading way data"
+                } else {
+                    Message message = handler.obtainMessage(SYNCING_DATA_WHAT);
+                    handler.sendMessage(message);
                 }
                 if (trassData == null || tsp + SYNC_VALID_FOR < timestamp) {
                     SharedPreferences.Editor editor = pref.edit();

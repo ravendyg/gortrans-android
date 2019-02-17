@@ -20,6 +20,7 @@ import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ListView;
+import android.widget.Toast;
 
 import org.osmdroid.config.Configuration;
 import org.osmdroid.config.IConfigurationProvider;
@@ -28,6 +29,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 
 import info.nskgortrans.maps.Adapters.BusListAdapter;
 import info.nskgortrans.maps.DataClasses.BusListElementData;
@@ -78,9 +80,12 @@ public class MainActivity extends AppCompatActivity {
     private ArrayList<BusListElementData> displayedBuses;
     private BusListAdapter displayedBusesAdapter;
 
+    private Toast toast;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        context = this;
 
         File tilesDir = new File(getApplicationContext().getFilesDir() + "/tiles");
         IConfigurationProvider configuration = Configuration.getInstance();
@@ -106,6 +111,10 @@ public class MainActivity extends AppCompatActivity {
                     }
 
                     case SyncService.TRASS_SYNC_DATA_WHAT: {
+                        if (toast != null) {
+                            toast.cancel();
+                            toast = null;
+                        }
                         TrassData trassData = (TrassData) msg.obj;
                         for (BusListElementData displayedBus : displayedBuses) {
                             String code = trassData.getCode();
@@ -114,6 +123,21 @@ public class MainActivity extends AppCompatActivity {
                                 break;
                             }
                         }
+                        break;
+                    }
+
+                    case SyncService.SYNCING_DATA_WHAT: {
+                        System.out.println("syncing");
+                        if (toast != null) {
+                            toast.cancel();
+
+                        }
+                        toast = Toast.makeText(
+                                context,
+                                "Загружаю данные маршрута",
+                                Toast.LENGTH_LONG
+                        );
+                        toast.show();
                         break;
                     }
                 }
@@ -136,7 +160,6 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        context = this;
         pref = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
         String apiKey = ensureApiKey();
         utils = new Utils();
@@ -182,6 +205,47 @@ public class MainActivity extends AppCompatActivity {
 
         map = new Map();
         map.init(context, findViewById(R.id.map), pref);
+
+        // make sure all permissions granted
+        boolean askedPermissions = pref.getBoolean("asked-permissions", false);
+        SharedPreferences.Editor editor = pref.edit();
+        editor.putBoolean("asked-permissions", true);
+        editor.commit();
+
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED
+        ) {
+            if (!askedPermissions) {
+                ActivityCompat.requestPermissions(
+                        this,
+                        new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                        FINE_LOCATION_PERMISSION_GRANTED
+                );
+            }
+        } else {
+            startTrackingUser();
+        }
+    }
+
+    private void moveUser (Location _location) {
+        location = _location;
+        View gotoUserBtn = findViewById(R.id.user_location);
+        if (location != null) {
+            if (map != null) {
+                map.moveUser(_location);
+            }
+            if (!userFound) {
+                userFound = true;
+                if (gotoUserBtn != null) {
+                    gotoUserBtn.setVisibility(View.VISIBLE);
+                }
+            }
+        } else {
+            userFound = false;
+            if (gotoUserBtn != null) {
+                gotoUserBtn.setVisibility(View.GONE);
+            }
+        }
     }
 
     private void startTrackingUser() {
@@ -190,30 +254,21 @@ public class MainActivity extends AppCompatActivity {
         }
 
         trackingUser = true;
-        // Acquire a reference to the system Location Manager
         final LocationManager locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
-
+        // display current position
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+                == PackageManager.PERMISSION_GRANTED
+        ) {
+            Location _location = locationManager.getLastKnownLocation("network");
+            if (_location == null) {
+                _location = locationManager.getLastKnownLocation("gps");
+            }
+            moveUser(_location);
+        }
         // Define a listener that responds to location updates
         LocationListener locationListener = new LocationListener() {
             public void onLocationChanged(Location _location) {
-                location = _location;
-                View gotoUserBtn = findViewById(R.id.user_location);
-                if (location != null) {
-                    if (map != null) {
-                        map.moveUser(_location);
-                    }
-                    if (!userFound) {
-                        userFound = true;
-                        if (gotoUserBtn != null) {
-                            gotoUserBtn.setVisibility(View.VISIBLE);
-                        }
-                    }
-                } else {
-                    userFound = false;
-                    if (gotoUserBtn != null) {
-                        gotoUserBtn.setVisibility(View.GONE);
-                    }
-                }
+                moveUser(_location);
             }
 
             public void onStatusChanged(String provider, int status, Bundle extras) {
@@ -425,9 +480,6 @@ public class MainActivity extends AppCompatActivity {
             case FINE_LOCATION_PERMISSION_GRANTED: {
                 if (grantResults != null && grantResults.length > 0 && grantResults[0] == 0) {
                     startTrackingUser();
-                    Intent intent = getIntent();
-                    finish();
-                    startActivity(intent);
                 }
                 break;
             }
