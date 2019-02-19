@@ -37,6 +37,7 @@ import info.nskgortrans.maps.DataClasses.TrassData;
 import info.nskgortrans.maps.DataClasses.WayPointData;
 import info.nskgortrans.maps.DataClasses.BusInfo;
 import info.nskgortrans.maps.DataClasses.StopInfo;
+import info.nskgortrans.maps.MapClasses.NewMarker;
 import info.nskgortrans.maps.MapClasses.StopOnMap;
 import info.nskgortrans.maps.DataClasses.UpdateParcel;
 
@@ -418,7 +419,7 @@ public class Map {
     }
 
     private Marker busMarkerFactory(String busCode, BusInfo info) {
-        Marker mr = new Marker(map);
+        Marker mr = new NewMarker(map);
         mr.setPosition(new GeoPoint(info.lat, info.lng));
         int color = routeColors.get(busCode);
         mr.setIcon(busMarkerIcons.get(color));
