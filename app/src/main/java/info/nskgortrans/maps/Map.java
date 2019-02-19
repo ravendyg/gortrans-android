@@ -458,7 +458,7 @@ public class Map {
     }
 
     private float transformAzimuth(int azimuth) {
-        return (90 - azimuth);
+        return (azimuth + 270) % 360;
     }
 
     private Drawable createMarkerImage(int resId) {

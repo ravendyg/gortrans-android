@@ -29,7 +29,6 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 
 import info.nskgortrans.maps.Adapters.BusListAdapter;
 import info.nskgortrans.maps.DataClasses.BusListElementData;
