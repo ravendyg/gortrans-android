@@ -44,6 +44,7 @@ import info.nskgortrans.maps.Services.ISyncService;
 import info.nskgortrans.maps.Services.StorageService;
 import info.nskgortrans.maps.Services.SyncService;
 import info.nskgortrans.maps.UIComponents.SearchBusDialog;
+import info.nskgortrans.maps.UIComponents.SettingsDialog;
 
 public class MainActivity extends AppCompatActivity {
     private String LOG_TAG = "main activity";
@@ -69,6 +70,7 @@ public class MainActivity extends AppCompatActivity {
     RoutesInfoData routesInfoData;
 
     private Dialog searchBusDialog = null;
+    private Dialog settingsDialog = null;
 
     private Map map;
     private Location location;
@@ -103,7 +105,6 @@ public class MainActivity extends AppCompatActivity {
                         routesInfoData = (RoutesInfoData) msg.obj;
                         // TODO: handle different loading source and live update
                         if (routesInfoData != null) {
-                            findViewById(R.id.bus_search_btn).setVisibility(View.VISIBLE);
                             replayDisplayed();
                         }
                         break;
@@ -297,8 +298,12 @@ public class MainActivity extends AppCompatActivity {
         searchBusDialog = new SearchBusDialog(context, routesInfoData, storageService, utils);
     }
 
+    public void showSettingsDialog(View bntView) {
+        settingsDialog = new SettingsDialog(context);
+    }
+
     public void selectBus(final WayData wayData, final boolean zoom) {
-        removeDialog();
+        removeDialogs();
 
         String code = wayData.getCode();
 
@@ -391,10 +396,14 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void removeDialog() {
+    private void removeDialogs() {
         if (searchBusDialog != null) {
             searchBusDialog.cancel();
             searchBusDialog = null;
+        }
+        if (settingsDialog != null) {
+            settingsDialog.cancel();
+            settingsDialog = null;
         }
     }
 
@@ -416,7 +425,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onDestroy() {
         super.onDestroy();
 
-        removeDialog();
+        removeDialogs();
     }
 
     public void zoomToUser(View bntView) {
