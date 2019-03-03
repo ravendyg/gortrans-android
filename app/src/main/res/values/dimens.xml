@@ -11,4 +11,6 @@
     <dimen name="search_item_vertical_padding">16dp</dimen>
     <dimen name="regular_font_size">16sp</dimen>
     <dimen name="name_font_size">20sp</dimen>
+
+    <dimen name="setting_image_size">32dp</dimen>
 </resources>

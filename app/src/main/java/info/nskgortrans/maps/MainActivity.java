@@ -434,6 +434,10 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    public void changeMarkerType(int newType) {
+        map.changeMarkerType(newType);
+    }
+
     @Override
     public void onStart() {
         super.onStart();
@@ -460,7 +464,7 @@ public class MainActivity extends AppCompatActivity {
         String code = busListElement.getCode();
         displayedBuses.add(busListElement);
         displayedBusesAdapter.notifyDataSetChanged();
-        map.setColor(code, color);
+        map.setColor(code, color, wayData.getType());
 
         busService.subscribe(code);
     }
