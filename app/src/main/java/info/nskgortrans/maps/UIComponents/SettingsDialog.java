@@ -9,6 +9,7 @@ import android.preference.PreferenceManager;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
+import android.widget.LinearLayout;
 import android.widget.RadioButton;
 
 import info.nskgortrans.maps.MainActivity;
@@ -19,7 +20,9 @@ public class SettingsDialog extends Dialog {
 
     private final SharedPreferences pref;
     private final RadioButton newMarkerTypeBtn;
+    private final LinearLayout newMarkerTypeWrapper;
     private final RadioButton oldMarkerTypeBtn;
+    private final LinearLayout oldMarkerTypeWrapper;
     private int markerType;
 
     public SettingsDialog(final Context context) {
@@ -41,10 +44,12 @@ public class SettingsDialog extends Dialog {
         markerType = pref.getInt(MARKER_TYPE, 1);
 
         newMarkerTypeBtn = (RadioButton) findViewById(R.id.new_markers);
+        newMarkerTypeWrapper = (LinearLayout) findViewById(R.id.new_markers_wrapper);
         oldMarkerTypeBtn = (RadioButton) findViewById(R.id.old_markers);
+        oldMarkerTypeWrapper = (LinearLayout) findViewById(R.id.old_markers_wrapper);
         setBtns();
 
-        newMarkerTypeBtn.setOnClickListener(new View.OnClickListener() {
+        newMarkerTypeWrapper.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 if (markerType == 1) {
@@ -58,7 +63,7 @@ public class SettingsDialog extends Dialog {
                 ((MainActivity) context).changeMarkerType(1);
             }
         });
-        oldMarkerTypeBtn.setOnClickListener(new View.OnClickListener() {
+        oldMarkerTypeWrapper.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 if (markerType == 2) {

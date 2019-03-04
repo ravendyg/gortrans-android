@@ -38,7 +38,8 @@ import info.nskgortrans.maps.DataClasses.TrassData;
 import info.nskgortrans.maps.DataClasses.WayPointData;
 import info.nskgortrans.maps.DataClasses.BusInfo;
 import info.nskgortrans.maps.DataClasses.StopInfo;
-import info.nskgortrans.maps.MapClasses.NewMarker;
+import info.nskgortrans.maps.MapClasses.BusMarker;
+import info.nskgortrans.maps.MapClasses.StopMarker;
 import info.nskgortrans.maps.MapClasses.StopOnMap;
 import info.nskgortrans.maps.DataClasses.UpdateParcel;
 import info.nskgortrans.maps.UIComponents.SettingsDialog;
@@ -311,6 +312,17 @@ public class Map {
         }
     }
 
+    public void updateIcons(int markerType) {
+        this.markerType = markerType;
+        for(String busCode : busMarkers.keySet()) {
+            Drawable icon = getIcon(routeColors.get(busCode));
+            for(Marker marker : busMarkers.get(busCode).values()) {
+                marker.setIcon(icon);
+            }
+        }
+        map.invalidate();
+    }
+
     public void changeMarkerType(int newType) {
         markerType = newType;
     }
@@ -326,12 +338,13 @@ public class Map {
             String name = overlay.getClass().getName();
             if (name.equals("org.osmdroid.views.overlay.Polyline")) {
                 routes.add(overlay);
-            } else if (name.equals("org.osmdroid.views.overlay.Marker")) {
-                if (((Marker) overlay).getImage() == stopImage ) {
-                    stops.add(overlay);
-                } else {
-                    buses.add(overlay);
-                }
+            } else if (name.equals("info.nskgortrans.maps.MapClasses.BusMarker")) {
+                buses.add(overlay);
+            } else if (name.equals("info.nskgortrans.maps.MapClasses.StopMarker")) {
+                stops.add(overlay);
+            } else {
+                // user marker
+                stops.add(overlay);
             }
         }
         for (Overlay over : routes) {
@@ -439,7 +452,7 @@ public class Map {
     }
 
     private Marker stopMarkerFactory(StopInfo info) {
-        Marker mr = new Marker(map);
+        Marker mr = new StopMarker(map);
         mr.setPosition(new GeoPoint(info.getLat(), info.getLng()));
         mr.setIcon(stopImage);
         mr.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER);
@@ -449,10 +462,10 @@ public class Map {
     }
 
     private Marker busMarkerFactory(String busCode, BusInfo info) {
-        Marker mr = new NewMarker(map);
+        Marker mr = new BusMarker(map);
         mr.setPosition(new GeoPoint(info.lat, info.lng));
         int color = routeColors.get(busCode);
-        mr.setIcon(markerType == 1 ? busMarkerIcons.get(color) : colorToMarker.get(color));
+        mr.setIcon(getIcon(color));
         mr.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER);
         mr.setRotation(transformAzimuth(info.azimuth));
         mr.setTitle(info.title);
@@ -486,6 +499,10 @@ public class Map {
                 marker.setRotation(transformAzimuth(info.azimuth));
             }
         }
+    }
+
+    private Drawable getIcon(int color) {
+        return markerType == 1 ? busMarkerIcons.get(color) : colorToMarker.get(color);
     }
 
     private float transformAzimuth(int azimuth) {

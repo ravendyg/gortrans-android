@@ -17,6 +17,7 @@
         android:layout_height="wrap_content"
     >
         <LinearLayout
+            android:id="@+id/new_markers_wrapper"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:paddingVertical="8dp"
@@ -61,6 +62,7 @@
         </LinearLayout>
 
         <LinearLayout
+            android:id="@+id/old_markers_wrapper"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:paddingVertical="8dp"
@@ -81,7 +83,7 @@
             <ImageView
                 android:layout_width="@dimen/setting_image_size"
                 android:layout_height="@dimen/setting_image_size"
-                android:src="@drawable/trolley_90_"
+                android:src="@drawable/trolley_90"
                 android:layout_marginRight="8dp"
                 />
             <ImageView

@@ -314,7 +314,7 @@ public class MainActivity extends AppCompatActivity {
             }
         }
 
-        int newColor, icon;
+        int newColor;
         int size = availableColors.size();
         if (size > 0) {
             newColor = availableColors.get(size - 1);
@@ -325,25 +325,7 @@ public class MainActivity extends AppCompatActivity {
             newColor = availableColors.get(0);
         }
 
-        // select icon
-        switch (wayData.getType()) {
-            case 1:
-                icon = R.drawable.bus;
-                break;
-
-            case 2:
-                icon = R.drawable.trolley;
-                break;
-
-            case 3:
-                icon = R.drawable.tram;
-                break;
-
-            default:
-                icon = R.drawable.minibus;
-        }
-
-        addBus(wayData, newColor, icon, zoom);
+        addBus(wayData, newColor, zoom);
         syncService.syncTrassInfo(wayData.getCode());
 
         if (zoom) {
@@ -436,6 +418,11 @@ public class MainActivity extends AppCompatActivity {
 
     public void changeMarkerType(int newType) {
         map.changeMarkerType(newType);
+        for (BusListElementData busListElementData : displayedBuses) {
+            busListElementData.toggleType(newType);
+        }
+        map.updateIcons(newType);
+        displayedBusesAdapter.notifyDataSetChanged();
     }
 
     @Override
@@ -459,8 +446,9 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void addBus(final WayData wayData, int color, int icon, boolean zoom) {
-        BusListElementData busListElement = new BusListElementData(wayData, icon, color, zoom);
+    private void addBus(final WayData wayData, int color, boolean zoom) {
+        int markerType = pref.getInt(SettingsDialog.MARKER_TYPE, 1);
+        BusListElementData busListElement = new BusListElementData(wayData, color, zoom, markerType);
         String code = busListElement.getCode();
         displayedBuses.add(busListElement);
         displayedBusesAdapter.notifyDataSetChanged();
