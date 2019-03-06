@@ -10,6 +10,7 @@ import android.graphics.Bitmap;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.location.Location;
+import android.preference.PreferenceManager;
 import android.support.v4.content.ContextCompat;
 import android.util.Log;
 import android.view.View;
@@ -37,8 +38,11 @@ import info.nskgortrans.maps.DataClasses.TrassData;
 import info.nskgortrans.maps.DataClasses.WayPointData;
 import info.nskgortrans.maps.DataClasses.BusInfo;
 import info.nskgortrans.maps.DataClasses.StopInfo;
+import info.nskgortrans.maps.MapClasses.BusMarker;
+import info.nskgortrans.maps.MapClasses.StopMarker;
 import info.nskgortrans.maps.MapClasses.StopOnMap;
 import info.nskgortrans.maps.DataClasses.UpdateParcel;
+import info.nskgortrans.maps.UIComponents.SettingsDialog;
 
 public class Map {
     private static final String LOG_TAG = "Map service";
@@ -68,6 +72,8 @@ public class Map {
     private HashMap<String, HashMap<String, Marker>> busMarkers = new HashMap<>();
 
     private HashMap<Integer, Drawable> busMarkerIcons = new HashMap<>();
+    private HashMap<Integer, Drawable> colorToMarker = new HashMap<>();
+    private int markerType;
 
     public void init(Context context, View view, SharedPreferences _pref) {
         pref = _pref;
@@ -84,15 +90,18 @@ public class Map {
         ctx = context;
         map.setMultiTouchControls(true);
 
+        pref = PreferenceManager.getDefaultSharedPreferences(context);
+        markerType = pref.getInt(SettingsDialog.MARKER_TYPE, 1);
+
         stopImage = ContextCompat.getDrawable(ctx, R.drawable.bus_stop2);
         Bitmap stopBitmap = ((BitmapDrawable) stopImage).getBitmap();
         stopImage = new BitmapDrawable(ctx.getResources(), Bitmap.createScaledBitmap(stopBitmap, 50, 50, true));
 
-        busMarkerIcons.put(R.color.busColor1, createMarkerImage(R.drawable.bus_marker_red));
-        busMarkerIcons.put(R.color.busColor2, createMarkerImage(R.drawable.bus_marker_blue));
-        busMarkerIcons.put(R.color.busColor3, createMarkerImage(R.drawable.bus_marker_orange));
-        busMarkerIcons.put(R.color.busColor4, createMarkerImage(R.drawable.bus_marker_yellow));
-        busMarkerIcons.put(R.color.busColor5, createMarkerImage(R.drawable.bus_marker_gray));
+        busMarkerIcons.put(R.color.busColor1, createMarkerImage(R.drawable.bus_marker_red, false));
+        busMarkerIcons.put(R.color.busColor2, createMarkerImage(R.drawable.bus_marker_blue, false));
+        busMarkerIcons.put(R.color.busColor3, createMarkerImage(R.drawable.bus_marker_orange, false));
+        busMarkerIcons.put(R.color.busColor4, createMarkerImage(R.drawable.bus_marker_yellow, false));
+        busMarkerIcons.put(R.color.busColor5, createMarkerImage(R.drawable.bus_marker_gray, false));
         routeColors = new HashMap<>();
 
         userImage = ContextCompat.getDrawable(ctx, R.drawable.pin);
@@ -164,8 +173,27 @@ public class Map {
         tryToZoom();
     }
 
-    public void setColor(String code, Integer color) {
+    public void setColor(String code, Integer color, int type) {
         routeColors.put(code, color);
+        Drawable icon;
+        switch (type) {
+            case 1:
+                icon = createMarkerImage(R.drawable.bus_90, true);
+                break;
+
+            case 2:
+                icon = createMarkerImage(R.drawable.trolley_90, true);
+                break;
+
+            case 3:
+                icon = createMarkerImage(R.drawable.tram_90, true);
+                break;
+
+            default:
+                icon = createMarkerImage(R.drawable.minibus_90, true);
+                break;
+        }
+        colorToMarker.put(color, icon);
     }
 
     public void upsertBusMain(final BusListElementData busListElementData, final TrassData trassData) {
@@ -284,6 +312,21 @@ public class Map {
         }
     }
 
+    public void updateIcons(int markerType) {
+        this.markerType = markerType;
+        for(String busCode : busMarkers.keySet()) {
+            Drawable icon = getIcon(routeColors.get(busCode));
+            for(Marker marker : busMarkers.get(busCode).values()) {
+                marker.setIcon(icon);
+            }
+        }
+        map.invalidate();
+    }
+
+    public void changeMarkerType(int newType) {
+        markerType = newType;
+    }
+
     private void ensureCorrectMarkerZindex() {
         List<Overlay> routes = new ArrayList<>();
         List<Overlay> stops = new ArrayList<>();
@@ -295,12 +338,13 @@ public class Map {
             String name = overlay.getClass().getName();
             if (name.equals("org.osmdroid.views.overlay.Polyline")) {
                 routes.add(overlay);
-            } else if (name.equals("org.osmdroid.views.overlay.Marker")) {
-                if (((Marker) overlay).getImage() == stopImage ) {
-                    stops.add(overlay);
-                } else {
-                    buses.add(overlay);
-                }
+            } else if (name.equals("info.nskgortrans.maps.MapClasses.BusMarker")) {
+                buses.add(overlay);
+            } else if (name.equals("info.nskgortrans.maps.MapClasses.StopMarker")) {
+                stops.add(overlay);
+            } else {
+                // user marker
+                stops.add(overlay);
             }
         }
         for (Overlay over : routes) {
@@ -408,7 +452,7 @@ public class Map {
     }
 
     private Marker stopMarkerFactory(StopInfo info) {
-        Marker mr = new Marker(map);
+        Marker mr = new StopMarker(map);
         mr.setPosition(new GeoPoint(info.getLat(), info.getLng()));
         mr.setIcon(stopImage);
         mr.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER);
@@ -418,10 +462,10 @@ public class Map {
     }
 
     private Marker busMarkerFactory(String busCode, BusInfo info) {
-        Marker mr = new Marker(map);
+        Marker mr = new BusMarker(map);
         mr.setPosition(new GeoPoint(info.lat, info.lng));
         int color = routeColors.get(busCode);
-        mr.setIcon(busMarkerIcons.get(color));
+        mr.setIcon(getIcon(color));
         mr.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER);
         mr.setRotation(transformAzimuth(info.azimuth));
         mr.setTitle(info.title);
@@ -457,18 +501,22 @@ public class Map {
         }
     }
 
-    private float transformAzimuth(int azimuth) {
-        return (90 - azimuth);
+    private Drawable getIcon(int color) {
+        return markerType == 1 ? busMarkerIcons.get(color) : colorToMarker.get(color);
     }
 
-    private Drawable createMarkerImage(int resId) {
+    private float transformAzimuth(int azimuth) {
+        return (azimuth + 270) % 360;
+    }
+
+    private Drawable createMarkerImage(int resId, boolean isOld) {
 
         Drawable markerImage = ContextCompat.getDrawable(ctx, resId);
         Bitmap redMarkerBitmap = ((BitmapDrawable) markerImage).getBitmap();
 
 
         markerImage = new BitmapDrawable(ctx.getResources(),
-                Bitmap.createScaledBitmap(redMarkerBitmap, 50, 60, true));
+                Bitmap.createScaledBitmap(redMarkerBitmap, isOld ? 75 : 50, isOld ? 90 : 60, true));
 
         return markerImage;
     }

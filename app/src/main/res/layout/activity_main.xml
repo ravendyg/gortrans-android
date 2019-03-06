@@ -40,7 +40,6 @@
                     android:layout_margin="@dimen/activity_horizontal_margin"
                     map:rippleColor="@color/rippleColor"
                     map:backgroundTint="@color/btnColor"
-                    android:visibility="invisible"
                     android:onClick="showSearchBusDialog"
                 />
                 <android.support.design.widget.FloatingActionButton
@@ -55,6 +54,18 @@
                     android:visibility="invisible"
                     android:onClick="zoomToUser"
                 />
+                <android.support.design.widget.FloatingActionButton
+                    android:id="@+id/settings"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="32dp"
+                    android:src="@drawable/cog"
+                    android:layout_margin="@dimen/activity_horizontal_margin"
+                    map:rippleColor="@color/rippleColor"
+                    map:backgroundTint="@color/btnColor"
+                    android:onClick="showSettingsDialog"
+                    android:gravity="bottom"
+                    />
             </LinearLayout>
         </LinearLayout>
 

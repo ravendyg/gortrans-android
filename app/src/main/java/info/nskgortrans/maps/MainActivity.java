@@ -29,7 +29,6 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 
 import info.nskgortrans.maps.Adapters.BusListAdapter;
 import info.nskgortrans.maps.DataClasses.BusListElementData;
@@ -45,6 +44,7 @@ import info.nskgortrans.maps.Services.ISyncService;
 import info.nskgortrans.maps.Services.StorageService;
 import info.nskgortrans.maps.Services.SyncService;
 import info.nskgortrans.maps.UIComponents.SearchBusDialog;
+import info.nskgortrans.maps.UIComponents.SettingsDialog;
 
 public class MainActivity extends AppCompatActivity {
     private String LOG_TAG = "main activity";
@@ -70,6 +70,7 @@ public class MainActivity extends AppCompatActivity {
     RoutesInfoData routesInfoData;
 
     private Dialog searchBusDialog = null;
+    private Dialog settingsDialog = null;
 
     private Map map;
     private Location location;
@@ -104,7 +105,6 @@ public class MainActivity extends AppCompatActivity {
                         routesInfoData = (RoutesInfoData) msg.obj;
                         // TODO: handle different loading source and live update
                         if (routesInfoData != null) {
-                            findViewById(R.id.bus_search_btn).setVisibility(View.VISIBLE);
                             replayDisplayed();
                         }
                         break;
@@ -298,8 +298,12 @@ public class MainActivity extends AppCompatActivity {
         searchBusDialog = new SearchBusDialog(context, routesInfoData, storageService, utils);
     }
 
+    public void showSettingsDialog(View bntView) {
+        settingsDialog = new SettingsDialog(context);
+    }
+
     public void selectBus(final WayData wayData, final boolean zoom) {
-        removeDialog();
+        removeDialogs();
 
         String code = wayData.getCode();
 
@@ -310,7 +314,7 @@ public class MainActivity extends AppCompatActivity {
             }
         }
 
-        int newColor, icon;
+        int newColor;
         int size = availableColors.size();
         if (size > 0) {
             newColor = availableColors.get(size - 1);
@@ -321,25 +325,7 @@ public class MainActivity extends AppCompatActivity {
             newColor = availableColors.get(0);
         }
 
-        // select icon
-        switch (wayData.getType()) {
-            case 1:
-                icon = R.drawable.bus;
-                break;
-
-            case 2:
-                icon = R.drawable.trolley;
-                break;
-
-            case 3:
-                icon = R.drawable.tram;
-                break;
-
-            default:
-                icon = R.drawable.minibus;
-        }
-
-        addBus(wayData, newColor, icon, zoom);
+        addBus(wayData, newColor, zoom);
         syncService.syncTrassInfo(wayData.getCode());
 
         if (zoom) {
@@ -392,10 +378,14 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void removeDialog() {
+    private void removeDialogs() {
         if (searchBusDialog != null) {
             searchBusDialog.cancel();
             searchBusDialog = null;
+        }
+        if (settingsDialog != null) {
+            settingsDialog.cancel();
+            settingsDialog = null;
         }
     }
 
@@ -417,13 +407,22 @@ public class MainActivity extends AppCompatActivity {
     protected void onDestroy() {
         super.onDestroy();
 
-        removeDialog();
+        removeDialogs();
     }
 
     public void zoomToUser(View bntView) {
         if (userFound) {
             map.zoomToUser(location);
         }
+    }
+
+    public void changeMarkerType(int newType) {
+        map.changeMarkerType(newType);
+        for (BusListElementData busListElementData : displayedBuses) {
+            busListElementData.toggleType(newType);
+        }
+        map.updateIcons(newType);
+        displayedBusesAdapter.notifyDataSetChanged();
     }
 
     @Override
@@ -447,12 +446,13 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void addBus(final WayData wayData, int color, int icon, boolean zoom) {
-        BusListElementData busListElement = new BusListElementData(wayData, icon, color, zoom);
+    private void addBus(final WayData wayData, int color, boolean zoom) {
+        int markerType = pref.getInt(SettingsDialog.MARKER_TYPE, 1);
+        BusListElementData busListElement = new BusListElementData(wayData, color, zoom, markerType);
         String code = busListElement.getCode();
         displayedBuses.add(busListElement);
         displayedBusesAdapter.notifyDataSetChanged();
-        map.setColor(code, color);
+        map.setColor(code, color, wayData.getType());
 
         busService.subscribe(code);
     }
