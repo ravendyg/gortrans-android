@@ -281,10 +281,12 @@ public class Map {
                         busCode,
                         add.get(busInfo.graph)
                 );
-                if (routeAlreadyDisplayed) {
-                    map.getOverlays().add(marker);
+                if (marker != null) {
+                    if (routeAlreadyDisplayed) {
+                        map.getOverlays().add(marker);
+                    }
+                    buses.put(busInfo.graph, marker);
                 }
-                buses.put(busInfo.graph, marker);
             }
             if (_reset) {
                 continue;
@@ -462,14 +464,19 @@ public class Map {
     }
 
     private Marker busMarkerFactory(String busCode, BusInfo info) {
-        Marker mr = new BusMarker(map);
-        mr.setPosition(new GeoPoint(info.lat, info.lng));
-        int color = routeColors.get(busCode);
-        mr.setIcon(getIcon(color));
-        mr.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER);
-        mr.setRotation(transformAzimuth(info.azimuth));
-        mr.setTitle(info.title);
-        return mr;
+        try {
+            Marker mr = new BusMarker(map);
+            mr.setPosition(new GeoPoint(info.lat, info.lng));
+            int color = routeColors.get(busCode);
+            mr.setIcon(getIcon(color));
+            mr.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER);
+            mr.setRotation(transformAzimuth(info.azimuth));
+            mr.setTitle(info.title);
+            return mr;
+        } catch (Exception err) {
+            err.printStackTrace();
+            return null;
+        }
     }
 
     private void removeBusMarker(String busCode, String graph) {
